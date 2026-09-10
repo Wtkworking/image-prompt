@@ -1,0 +1,2269 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>คัมภีร์สร้างภาพด้วย AI - ฉบับใช้ง่าย</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        margin: 0;
+        font-family:
+            "Tahoma",
+            "Noto Sans Thai",
+            "Leelawadee UI",
+            Arial,
+            sans-serif;
+        background: #f5f7fb;
+        color: #202733;
+        font-size: 18px;
+        line-height: 1.7;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+        font-family: inherit;
+    }
+
+    /* =========================
+       HEADER
+    ========================= */
+
+    .header {
+        background: #ffffff;
+        border-bottom: 1px solid #e1e5eb;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+
+    .header-inner {
+        max-width: 1200px;
+        margin: auto;
+        padding: 15px 25px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+    }
+
+    .brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .brand-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        background: #173f6f;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 27px;
+        font-weight: bold;
+    }
+
+    .brand-title {
+        font-size: 22px;
+        font-weight: bold;
+        color: #173f6f;
+        line-height: 1.3;
+    }
+
+    .brand-subtitle {
+        font-size: 14px;
+        color: #667085;
+    }
+
+    .nav {
+        display: flex;
+        gap: 8px;
+    }
+
+    .nav button {
+        border: none;
+        background: transparent;
+        padding: 10px 15px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 17px;
+        color: #344054;
+    }
+
+    .nav button:hover {
+        background: #eef4fb;
+    }
+
+    /* =========================
+       HERO
+    ========================= */
+
+    .hero {
+        background:
+            linear-gradient(135deg, #173f6f 0%, #2369a5 100%);
+        color: white;
+        padding: 60px 25px 70px;
+    }
+
+    .hero-inner {
+        max-width: 1100px;
+        margin: auto;
+        text-align: center;
+    }
+
+    .hero-badge {
+        display: inline-block;
+        background: rgba(255,255,255,0.16);
+        padding: 8px 18px;
+        border-radius: 30px;
+        margin-bottom: 18px;
+        font-size: 17px;
+    }
+
+    .hero h1 {
+        font-size: clamp(34px, 5vw, 58px);
+        line-height: 1.2;
+        margin: 0 0 18px;
+    }
+
+    .hero p {
+        font-size: clamp(20px, 2.5vw, 26px);
+        max-width: 800px;
+        margin: 0 auto 30px;
+        opacity: 0.96;
+    }
+
+    .hero-note {
+        display: inline-block;
+        background: white;
+        color: #173f6f;
+        padding: 12px 22px;
+        border-radius: 12px;
+        font-weight: bold;
+    }
+
+    /* =========================
+       MAIN
+    ========================= */
+
+    .container {
+        max-width: 1200px;
+        margin: auto;
+        padding: 45px 25px 80px;
+    }
+
+    .section-title {
+        font-size: 32px;
+        margin: 0 0 10px;
+        color: #173f6f;
+    }
+
+    .section-description {
+        color: #667085;
+        font-size: 19px;
+        margin-top: 0;
+        margin-bottom: 30px;
+    }
+
+    /* =========================
+       BIG START BUTTONS
+    ========================= */
+
+    .start-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        margin-bottom: 60px;
+    }
+
+    .start-card {
+        background: white;
+        border: 2px solid #e4e7ec;
+        border-radius: 20px;
+        padding: 30px 25px;
+        text-align: center;
+        cursor: pointer;
+        transition: 0.2s;
+        min-height: 220px;
+    }
+
+    .start-card:hover {
+        transform: translateY(-3px);
+        border-color: #3b82c4;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    }
+
+    .start-icon {
+        width: 75px;
+        height: 75px;
+        margin: 0 auto 15px;
+        border-radius: 20px;
+        background: #edf5fd;
+        color: #173f6f;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 38px;
+    }
+
+    .start-card h3 {
+        margin: 0 0 5px;
+        font-size: 24px;
+    }
+
+    .start-card p {
+        margin: 0;
+        color: #667085;
+        font-size: 17px;
+    }
+
+    /* =========================
+       BUILDER
+    ========================= */
+
+    .builder {
+        background: white;
+        border-radius: 24px;
+        padding: 35px;
+        border: 1px solid #e1e5eb;
+        box-shadow: 0 8px 35px rgba(0,0,0,0.05);
+        display: none;
+    }
+
+    .builder.active {
+        display: block;
+    }
+
+    .step {
+        margin-bottom: 38px;
+    }
+
+    .step-number {
+        width: 42px;
+        height: 42px;
+        background: #173f6f;
+        color: white;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-right: 10px;
+        vertical-align: middle;
+    }
+
+    .step-title {
+        font-size: 25px;
+        font-weight: bold;
+        color: #173f6f;
+        display: inline;
+    }
+
+    .step-help {
+        margin: 10px 0 20px 54px;
+        color: #667085;
+        font-size: 18px;
+    }
+
+    .choice-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+    }
+
+    .choice {
+        background: #ffffff;
+        border: 2px solid #d9dee7;
+        border-radius: 16px;
+        padding: 18px 12px;
+        cursor: pointer;
+        text-align: center;
+        min-height: 100px;
+        font-size: 19px;
+        transition: 0.2s;
+    }
+
+    .choice:hover {
+        border-color: #3b82c4;
+        background: #f5faff;
+    }
+
+    .choice.selected {
+        border-color: #173f6f;
+        background: #edf5fd;
+        box-shadow: 0 0 0 3px rgba(23,63,111,0.1);
+    }
+
+    .choice-icon {
+        font-size: 32px;
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    /* =========================
+       TEXT INPUT
+    ========================= */
+
+    .large-input,
+    .large-textarea,
+    .large-select {
+        width: 100%;
+        border: 2px solid #d9dee7;
+        border-radius: 14px;
+        padding: 17px 18px;
+        font-size: 20px;
+        background: #fff;
+        outline: none;
+    }
+
+    .large-input:focus,
+    .large-textarea:focus,
+    .large-select:focus {
+        border-color: #3b82c4;
+        box-shadow: 0 0 0 3px rgba(59,130,196,0.12);
+    }
+
+    .large-textarea {
+        min-height: 130px;
+        resize: vertical;
+    }
+
+    /* =========================
+       RESULT
+    ========================= */
+
+    .result {
+        margin-top: 40px;
+        background: #f7f9fc;
+        border: 2px solid #dce3ec;
+        border-radius: 20px;
+        padding: 28px;
+    }
+
+    .result h3 {
+        color: #173f6f;
+        font-size: 27px;
+        margin-top: 0;
+    }
+
+    .prompt-box {
+        background: #ffffff;
+        border: 1px solid #d9dee7;
+        border-radius: 14px;
+        padding: 20px;
+        font-size: 19px;
+        line-height: 1.8;
+        min-height: 150px;
+        white-space: pre-wrap;
+    }
+
+    .button-row {
+        display: flex;
+        gap: 12px;
+        margin-top: 20px;
+        flex-wrap: wrap;
+    }
+
+    .primary-btn,
+    .secondary-btn,
+    .danger-btn {
+        border: none;
+        border-radius: 13px;
+        padding: 15px 25px;
+        font-size: 20px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    .primary-btn {
+        background: #173f6f;
+        color: white;
+    }
+
+    .primary-btn:hover {
+        background: #0e3159;
+    }
+
+    .secondary-btn {
+        background: #e9eef5;
+        color: #173f6f;
+    }
+
+    .danger-btn {
+        background: #fce8e8;
+        color: #a72c2c;
+    }
+
+    /* =========================
+       COMMAND LIBRARY
+    ========================= */
+
+    .library {
+        margin-top: 60px;
+    }
+
+    .search-box {
+        margin-bottom: 20px;
+    }
+
+    .category-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 25px;
+    }
+
+    .category-btn {
+        border: 2px solid #d9dee7;
+        background: white;
+        border-radius: 30px;
+        padding: 9px 17px;
+        cursor: pointer;
+        font-size: 17px;
+    }
+
+    .category-btn.active {
+        background: #173f6f;
+        color: white;
+        border-color: #173f6f;
+    }
+
+    .command-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+    }
+
+    .command-card {
+        background: white;
+        border: 1px solid #e0e4eb;
+        border-radius: 17px;
+        padding: 22px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .command-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 22px rgba(0,0,0,0.07);
+    }
+
+    .command-name {
+        font-family: monospace;
+        font-size: 20px;
+        color: #173f6f;
+        font-weight: bold;
+    }
+
+    .command-thai {
+        font-size: 22px;
+        font-weight: bold;
+        margin: 7px 0;
+    }
+
+    .command-desc {
+        color: #667085;
+        font-size: 16px;
+    }
+
+    .command-use {
+        display: inline-block;
+        margin-top: 12px;
+        color: #2369a5;
+        font-size: 15px;
+    }
+
+    /* =========================
+       GUIDE
+    ========================= */
+
+    .guide {
+        margin-top: 60px;
+        background: white;
+        border-radius: 22px;
+        padding: 35px;
+        border: 1px solid #e1e5eb;
+    }
+
+    .guide-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+    }
+
+    .guide-item {
+        text-align: center;
+        padding: 20px;
+    }
+
+    .guide-number {
+        width: 55px;
+        height: 55px;
+        border-radius: 50%;
+        background: #edf5fd;
+        color: #173f6f;
+        font-size: 25px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: auto;
+    }
+
+    .guide-item h3 {
+        font-size: 21px;
+    }
+
+    .guide-item p {
+        color: #667085;
+        font-size: 16px;
+    }
+
+    /* =========================
+       MODAL
+    ========================= */
+
+    .modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.55);
+        z-index: 500;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .modal.active {
+        display: flex;
+    }
+
+    .modal-box {
+        width: min(650px, 100%);
+        background: white;
+        border-radius: 22px;
+        padding: 30px;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-close {
+        float: right;
+        border: none;
+        background: #eef1f5;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        font-size: 24px;
+        cursor: pointer;
+    }
+
+    /* =========================
+       FOOTER
+    ========================= */
+
+    footer {
+        background: #173f6f;
+        color: white;
+        padding: 35px 20px;
+        text-align: center;
+    }
+
+    footer p {
+        margin: 5px 0;
+    }
+
+    /* =========================
+       ACCESSIBILITY
+    ========================= */
+
+    .accessibility {
+        position: fixed;
+        right: 20px;
+        bottom: 20px;
+        z-index: 300;
+        display: flex;
+        gap: 8px;
+    }
+
+    .accessibility button {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        border: 2px solid #173f6f;
+        background: white;
+        color: #173f6f;
+        font-size: 21px;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+
+    body.large-text {
+        font-size: 21px;
+    }
+
+    body.large-text .choice,
+    body.large-text .command-card,
+    body.large-text .nav button {
+        font-size: 20px;
+    }
+
+    /* =========================
+       RESPONSIVE
+    ========================= */
+
+    @media (max-width: 900px) {
+
+        .start-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .choice-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .command-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .guide-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .nav {
+            display: none;
+        }
+    }
+
+    @media (max-width: 600px) {
+
+        body {
+            font-size: 17px;
+        }
+
+        .hero {
+            padding: 40px 18px 50px;
+        }
+
+        .container {
+            padding: 30px 16px 60px;
+        }
+
+        .builder {
+            padding: 22px;
+        }
+
+        .choice-grid,
+        .command-grid,
+        .guide-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .step-help {
+            margin-left: 0;
+        }
+
+        .button-row {
+            flex-direction: column;
+        }
+
+        .primary-btn,
+        .secondary-btn,
+        .danger-btn {
+            width: 100%;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<!-- =========================
+     HEADER
+========================= -->
+
+<header class="header">
+
+    <div class="header-inner">
+
+        <div class="brand">
+
+            <div class="brand-icon">
+                AI
+            </div>
+
+            <div>
+                <div class="brand-title">
+                    คัมภีร์สร้างภาพด้วย AI
+                </div>
+
+                <div class="brand-subtitle">
+                    ฉบับใช้ง่ายสำหรับทุกคน
+                </div>
+            </div>
+
+        </div>
+
+        <nav class="nav">
+            <button onclick="scrollToSection('builder')">
+                สร้างภาพ
+            </button>
+
+            <button onclick="scrollToSection('library')">
+                ดูตัวอย่าง
+            </button>
+
+            <button onclick="scrollToSection('guide')">
+                วิธีใช้
+            </button>
+        </nav>
+
+    </div>
+
+</header>
+
+
+<!-- =========================
+     HERO
+========================= -->
+
+<section class="hero">
+
+    <div class="hero-inner">
+
+        <div class="hero-badge">
+            ไม่ต้องเก่งคอมพิวเตอร์ ก็ใช้ได้
+        </div>
+
+        <h1>
+            อยากสร้างภาพอะไร<br>
+            ให้ AI ช่วยคุณได้
+        </h1>
+
+        <p>
+            เพียงเลือกสิ่งที่ต้องการ
+            ระบบจะช่วยสร้างคำสั่งสำหรับ AI ให้เอง
+        </p>
+
+        <div class="hero-note">
+            ไม่ต้องจำคำสั่งภาษาอังกฤษ
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================
+     MAIN
+========================= -->
+
+<main class="container">
+
+
+    <!-- START -->
+    <section>
+
+        <h2 class="section-title">
+            เริ่มต้นใช้งาน
+        </h2>
+
+        <p class="section-description">
+            เลือกสิ่งที่ต้องการได้เลย ไม่จำเป็นต้องรู้เรื่อง AI มาก่อน
+        </p>
+
+
+        <div class="start-grid">
+
+            <div class="start-card" onclick="startBuilder()">
+
+                <div class="start-icon">
+                    ✨
+                </div>
+
+                <h3>
+                    สร้างภาพให้ฉัน
+                </h3>
+
+                <p>
+                    ให้ระบบถามทีละขั้น
+                    แล้วสร้าง Prompt ให้คุณ
+                </p>
+
+            </div>
+
+
+            <div class="start-card" onclick="scrollToSection('library')">
+
+                <div class="start-icon">
+                    👁
+                </div>
+
+                <h3>
+                    ดูตัวอย่าง
+                </h3>
+
+                <p>
+                    ดูว่าคำสั่งแต่ละแบบ
+                    ใช้สร้างภาพอย่างไร
+                </p>
+
+            </div>
+
+
+            <div class="start-card" onclick="scrollToSection('guide')">
+
+                <div class="start-icon">
+                    ?
+                </div>
+
+                <h3>
+                    วิธีใช้งาน
+                </h3>
+
+                <p>
+                    เรียนรู้วิธีใช้งาน
+                    แบบง่าย ๆ
+                </p>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         BUILDER
+    ========================= -->
+
+    <section id="builder" class="builder">
+
+        <h2 class="section-title">
+            ผู้ช่วยสร้างภาพ
+        </h2>
+
+        <p class="section-description">
+            ตอบคำถามง่าย ๆ แล้วระบบจะช่วยจัด Prompt ให้คุณ
+        </p>
+
+
+        <!-- STEP 1 -->
+
+        <div class="step">
+
+            <div>
+                <span class="step-number">1</span>
+                <span class="step-title">
+                    คุณอยากสร้างภาพอะไร?
+                </span>
+            </div>
+
+            <p class="step-help">
+                ตัวอย่างเช่น บ้าน รถ อาหาร คน สัตว์ หรือสินค้า
+            </p>
+
+            <textarea
+                id="subject"
+                class="large-textarea"
+                placeholder="พิมพ์สิ่งที่คุณอยากสร้าง เช่น รถยนต์ไฟฟ้าสีขาว"
+            ></textarea>
+
+        </div>
+
+
+        <!-- STEP 2 -->
+
+        <div class="step">
+
+            <div>
+                <span class="step-number">2</span>
+                <span class="step-title">
+                    อยากให้ภาพเป็นแบบไหน?
+                </span>
+            </div>
+
+            <p class="step-help">
+                เลือกแบบที่คุณชอบ
+            </p>
+
+            <div class="choice-grid">
+
+                <button class="choice"
+                        data-group="style"
+                        data-value="ภาพถ่ายเหมือนจริง"
+                        onclick="selectChoice(this)">
+                    <span class="choice-icon">📷</span>
+                    ภาพเหมือนจริง
+                </button>
+
+                <button class="choice"
+                        data-group="style"
+                        data-value="ภาพ 3 มิติ"
+                        onclick="selectChoice(this)">
+                    <span class="choice-icon">🧊</span>
+                    ภาพ 3 มิติ
+                </button>
+
+                <button class="choice"
+                        data-group="style"
+                        data-value="ภาพวาด"
+                        onclick="selectChoice(this)">
+                    <span class="choice-icon">🎨</span>
+                    ภาพวาด
+                </button>
+
+                <button class="choice"
+                        data-group="style"
+                        data-value="ภาพการ์ตูน"
+                        onclick="selectChoice(this)">
+                    <span class="choice-icon">🖼</span>
+                    ภาพการ์ตูน
+                </button>
+
+                <button class="choice"
+                        data-group="style"
+                        data-value="ภาพโฆษณาสินค้า"
+                        onclick="selectChoice(this)">
+                    <span class="choice-icon">🏷</span>
+                    ภาพโฆษณา
+                </button>
+
+                <button class="choice"
+                        data-group="style"
+                        data-value="ภาพทางการ"
+                        onclick="selectChoice(this)">
+                    <span class="choice-icon">🏢</span>
+                    ภาพทางการ
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- STEP 3 -->
+
+        <div class="step">
+
+            <div>
+                <span class="step-number">3</span>
+                <span class="step-title">
+                    อยากมองภาพแบบไหน?
+                </span>
+            </div>
+
+            <p class="step-help">
+                เลือกมุมมองของภาพ
+            </p>
+
+            <div class="choice-grid">
+
+                <button class="choice"
+                        data-group="view"
+                        data-value="มองด้านหน้า"
+                        onclick="selectChoice(this)">
+                    <span class="choice-icon">⬆</span>
+                    ด้านหน้า
+                </button>
+
+                <button class="choice"
+                        data-group="view"
+                        data-value="มองจากด้านบน"
+                        onclick="selectChoice(this)">
+                    <span class="choice-icon">⬇</span>
+                    มองจากด้านบน
+                </button>
+
+                <button class="choice"
+                        data-group="view"
+                        data-value="มุมมองรอบด้าน"
+                        onclick="selectChoice(this)">
+                    <span class="choice-icon">🔄</span>
+                    รอบด้าน
+                </button>
+
+                <button class="choice"
+                        data-group="view"
+                        data-value="ภาพระยะใกล้ เห็นรายละเอียดชัดเจน"
+                        onclick="selectChoice(this)">
+                    <span class="choice-icon">🔍</span>
+                    เห็นรายละเอียด
+                </button>
+
+                <button class="choice"
+                        data-group="view"
+                        data-value="เห็นโครงสร้างภายใน"
+                        onclick="selectChoice(this)">
+                    <span class="choice-icon">🔎</span>
+                    เห็นด้านใน
+                </button>
+
+                <button class="choice"
+                        data-group="view"
+                        data-value="แยกชิ้นส่วนออกจากกัน"
+                        onclick="selectChoice(this)">
+                    <span class="choice-icon">🧩</span>
+                    แยกชิ้นส่วน
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- STEP 4 -->
+
+        <div class="step">
+
+            <div>
+                <span class="step-number">4</span>
+                <span class="step-title">
+                    อยากให้แสงเป็นแบบไหน?
+                </span>
+            </div>
+
+            <p class="step-help">
+                ถ้าไม่แน่ใจ สามารถข้ามได้
+            </p>
+
+            <div class="choice-grid">
+
+                <button class="choice"
+                        data-group="light"
+                        data-value="แสงธรรมชาติ"
+                        onclick="selectChoice(this)">
+                    <span class="choice-icon">☀</span>
+                    แสงธรรมชาติ
+                </button>
+
+                <button class="choice"
+                        data-group="light"
+                        data-value="แสงสตูดิโอ"
+                        onclick="selectChoice(this)">
+                    <span class="choice-icon">💡</span>
+                    แสงสตูดิโอ
+                </button>
+
+                <button class="choice"
+                        data-group="light"
+                        data-value="แสงนุ่ม ดูอบอุ่น"
+                        onclick="selectChoice(this)">
+                    <span class="choice-icon">🌤</span>
+                    แสงนุ่ม
+                </button>
+
+                <button class="choice"
+                        data-group="light"
+                        data-value="แสงแบบภาพยนตร์"
+                        onclick="selectChoice(this)">
+                    <span class="choice-icon">🎬</span>
+                    แสงภาพยนตร์
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- STEP 5 -->
+
+        <div class="step">
+
+            <div>
+                <span class="step-number">5</span>
+                <span class="step-title">
+                    อยากให้พื้นหลังเป็นแบบไหน?
+                </span>
+            </div>
+
+            <p class="step-help">
+                เลือกตามลักษณะภาพที่ต้องการ
+            </p>
+
+            <div class="choice-grid">
+
+                <button class="choice"
+                        data-group="background"
+                        data-value="พื้นหลังสีขาวสะอาด"
+                        onclick="selectChoice(this)">
+                    <span class="choice-icon">⬜</span>
+                    สีขาว
+                </button>
+
+                <button class="choice"
+                        data-group="background"
+                        data-value="พื้นหลังเรียบง่าย"
+                        onclick="selectChoice(this)">
+                    <span class="choice-icon">▫</span>
+                    เรียบง่าย
+                </button>
+
+                <button class="choice"
+                        data-group="background"
+                        data-value="อยู่ในสถานที่จริงตามบริบท"
+                        onclick="selectChoice(this)">
+                    <span class="choice-icon">🏠</span>
+                    สถานที่จริง
+                </button>
+
+                <button class="choice"
+                        data-group="background"
+                        data-value="พื้นหลังแบบโปร่งใส"
+                        onclick="selectChoice(this)">
+                    <span class="choice-icon">◻</span>
+                    โปร่งใส
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- SPECIAL COMMAND -->
+
+        <div class="step">
+
+            <div>
+                <span class="step-number">6</span>
+                <span class="step-title">
+                    อยากใช้คำสั่งพิเศษไหม?
+                </span>
+            </div>
+
+            <p class="step-help">
+                ส่วนนี้ไม่จำเป็นสำหรับมือใหม่
+            </p>
+
+            <div class="choice-grid">
+
+                <button class="choice"
+                        data-group="command"
+                        data-value="แสดงโครงสร้างและส่วนประกอบของวัตถุอย่างละเอียด"
+                        onclick="selectChoice(this)">
+                    <span class="choice-icon">🫀</span>
+                    ดูโครงสร้าง
+                </button>
+
+                <button class="choice"
+                        data-group="command"
+                        data-value="แสดงภาพแบบพิมพ์เขียวทางเทคนิค"
+                        onclick="selectChoice(this)">
+                    <span class="choice-icon">📐</span>
+                    พิมพ์เขียว
+                </button>
+
+                <button class="choice"
+                        data-group="command"
+                        data-value="แสดงชิ้นส่วนทั้งหมดแยกออกจากกัน"
+                        onclick="selectChoice(this)">
+                    <span class="choice-icon">⚙</span>
+                    แยกชิ้นส่วน
+                </button>
+
+                <button class="choice"
+                        data-group="command"
+                        data-value="แสดงภาพรอบวัตถุหลายมุม"
+                        onclick="selectChoice(this)">
+                    <span class="choice-icon">🔄</span>
+                    รอบ 360 องศา
+                </button>
+
+                <button class="choice"
+                        data-group="command"
+                        data-value="แสดงภาพตัดให้เห็นโครงสร้างภายใน"
+                        onclick="selectChoice(this)">
+                    <span class="choice-icon">✂</span>
+                    ภาพตัด
+                </button>
+
+                <button class="choice"
+                        data-group="command"
+                        data-value="แสดงภาพแบบเอ็กซ์เรย์เพื่อให้เห็นส่วนภายใน"
+                        onclick="selectChoice(this)">
+                    <span class="choice-icon">☢</span>
+                    เห็นด้านใน
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- GENERATE -->
+
+        <div class="button-row">
+
+            <button class="primary-btn"
+                    onclick="generatePrompt()">
+                สร้าง Prompt ให้ฉัน
+            </button>
+
+            <button class="secondary-btn"
+                    onclick="randomExample()">
+                ลองตัวอย่าง
+            </button>
+
+            <button class="danger-btn"
+                    onclick="clearBuilder()">
+                เริ่มใหม่
+            </button>
+
+        </div>
+
+
+        <!-- RESULT -->
+
+        <div id="result" class="result" style="display:none;">
+
+            <h3>
+                Prompt ของคุณพร้อมแล้ว
+            </h3>
+
+            <p>
+                นำข้อความนี้ไปใช้กับ AI สร้างภาพที่คุณต้องการได้เลย
+            </p>
+
+            <div id="promptOutput"
+                 class="prompt-box">
+            </div>
+
+            <div class="button-row">
+
+                <button class="primary-btn"
+                        onclick="copyPrompt()">
+                    คัดลอก Prompt
+                </button>
+
+                <button class="secondary-btn"
+                        onclick="speakPrompt()">
+                    อ่านให้ฟัง
+                </button>
+
+            </div>
+
+            <p id="copyMessage"
+               style="color:#247a45;font-weight:bold;margin-top:15px;">
+            </p>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         GUIDE
+    ========================= -->
+
+    <section id="guide" class="guide">
+
+        <h2 class="section-title">
+            วิธีใช้งาน
+        </h2>
+
+        <p class="section-description">
+            ใช้งานเพียง 4 ขั้นตอน
+        </p>
+
+        <div class="guide-grid">
+
+            <div class="guide-item">
+
+                <div class="guide-number">
+                    1
+                </div>
+
+                <h3>
+                    บอกสิ่งที่อยากสร้าง
+                </h3>
+
+                <p>
+                    พิมพ์สิ่งที่คุณอยากให้ AI สร้าง
+                </p>
+
+            </div>
+
+
+            <div class="guide-item">
+
+                <div class="guide-number">
+                    2
+                </div>
+
+                <h3>
+                    เลือกแบบภาพ
+                </h3>
+
+                <p>
+                    เลือกจากปุ่มที่เข้าใจง่าย
+                </p>
+
+            </div>
+
+
+            <div class="guide-item">
+
+                <div class="guide-number">
+                    3
+                </div>
+
+                <h3>
+                    กดสร้าง Prompt
+                </h3>
+
+                <p>
+                    ระบบจะจัดคำสั่งให้โดยอัตโนมัติ
+                </p>
+
+            </div>
+
+
+            <div class="guide-item">
+
+                <div class="guide-number">
+                    4
+                </div>
+
+                <h3>
+                    คัดลอกไปใช้
+                </h3>
+
+                <p>
+                    นำ Prompt ไปใช้กับ AI สร้างภาพ
+                </p>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         LIBRARY
+    ========================= -->
+
+    <section id="library" class="library">
+
+        <h2 class="section-title">
+            คำสั่งพิเศษสำหรับสร้างภาพ
+        </h2>
+
+        <p class="section-description">
+            ไม่ต้องจำ เพียงดูว่าต้องการภาพแบบไหน แล้วกดเลือกได้เลย
+        </p>
+
+
+        <div class="search-box">
+
+            <input
+                id="searchInput"
+                class="large-input"
+                type="text"
+                placeholder="ค้นหา เช่น แยกชิ้นส่วน, ด้านใน, 360 องศา..."
+                oninput="renderCommands()"
+            >
+
+        </div>
+
+
+        <div class="category-row">
+
+            <button class="category-btn active"
+                    onclick="filterCategory('ทั้งหมด', this)">
+                ทั้งหมด
+            </button>
+
+            <button class="category-btn"
+                    onclick="filterCategory('โครงสร้าง', this)">
+                โครงสร้าง
+            </button>
+
+            <button class="category-btn"
+                    onclick="filterCategory('มุมมอง', this)">
+                มุมมอง
+            </button>
+
+            <button class="category-btn"
+                    onclick="filterCategory('เทคนิค', this)">
+                เทคนิค
+            </button>
+
+            <button class="category-btn"
+                    onclick="filterCategory('สไตล์', this)">
+                สไตล์
+            </button>
+
+        </div>
+
+
+        <div id="commandGrid"
+             class="command-grid">
+        </div>
+
+    </section>
+
+</main>
+
+
+<!-- =========================
+     MODAL
+========================= -->
+
+<div id="modal"
+     class="modal"
+     onclick="closeModal(event)">
+
+    <div class="modal-box"
+         onclick="event.stopPropagation()">
+
+        <button class="modal-close"
+                onclick="closeModal()">
+            ×
+        </button>
+
+        <h2 id="modalTitle"></h2>
+
+        <p id="modalDescription"></p>
+
+        <hr>
+
+        <h3>
+            ใช้เมื่อไหร่?
+        </h3>
+
+        <p id="modalUse"></p>
+
+        <h3>
+            ตัวอย่าง
+        </h3>
+
+        <div id="modalExample"
+             class="prompt-box">
+        </div>
+
+        <div class="button-row">
+
+            <button class="primary-btn"
+                    onclick="useCommand()">
+                ใช้คำสั่งนี้
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================
+     ACCESSIBILITY
+========================= -->
+
+<div class="accessibility">
+
+    <button onclick="changeFontSize(1)"
+            title="เพิ่มขนาดตัวอักษร">
+        A+
+    </button>
+
+    <button onclick="changeFontSize(-1)"
+            title="ลดขนาดตัวอักษร">
+        A-
+    </button>
+
+</div>
+
+
+<!-- =========================
+     FOOTER
+========================= -->
+
+<footer>
+
+    <p style="font-size:22px;font-weight:bold;">
+        คัมภีร์สร้างภาพด้วย AI
+    </p>
+
+    <p>
+        ออกแบบให้ทุกคนสามารถเริ่มต้นใช้งาน AI ได้ง่าย
+    </p>
+
+    <p style="opacity:.75;font-size:15px;margin-top:15px;">
+        หมายเหตุ: คำสั่งที่แสดงในเว็บไซต์เป็นคำสำคัญสำหรับช่วยเขียน Prompt
+        ไม่ใช่คำสั่ง Slash Command ที่ AI ทุกระบบรองรับโดยตรง
+    </p>
+
+</footer>
+
+
+<script>
+
+/* ==========================================
+   DATA
+========================================== */
+
+const commands = [
+
+    {
+        command: "/Anatomy",
+        thai: "ดูโครงสร้าง",
+        category: "โครงสร้าง",
+        desc: "แสดงโครงสร้าง ส่วนประกอบ หรือรายละเอียดภายในของสิ่งที่ต้องการ",
+        use: "เหมาะกับร่างกาย เครื่องจักร อุปกรณ์ สัตว์ หรือวัตถุที่ต้องการศึกษา",
+        example: "รถยนต์ไฟฟ้า /Anatomy แสดงโครงสร้างและส่วนประกอบภายในอย่างละเอียด"
+    },
+
+    {
+        command: "/Blueprint",
+        thai: "พิมพ์เขียว",
+        category: "เทคนิค",
+        desc: "ทำให้ภาพมีลักษณะคล้ายแบบพิมพ์เขียวทางวิศวกรรม",
+        use: "เหมาะกับบ้าน อาคาร เครื่องจักร รถยนต์ และผลิตภัณฑ์",
+        example: "บ้านสมัยใหม่ /Blueprint technical drawing"
+    },
+
+    {
+        command: "/ExplodedView",
+        thai: "แยกชิ้นส่วน",
+        category: "โครงสร้าง",
+        desc: "แสดงชิ้นส่วนของวัตถุแยกออกจากกัน แต่ยังเห็นความสัมพันธ์ของแต่ละชิ้นส่วน",
+        use: "เหมาะกับสินค้า เครื่องจักร อุปกรณ์ และผลิตภัณฑ์",
+        example: "เครื่องชงกาแฟ /ExplodedView แสดงทุกชิ้นส่วน"
+    },
+
+    {
+        command: "/360View",
+        thai: "มุมมองรอบ 360 องศา",
+        category: "มุมมอง",
+        desc: "ช่วยกำหนดแนวคิดภาพให้เห็นวัตถุจากหลายมุมรอบตัว",
+        use: "เหมาะกับสินค้า รถยนต์ ตัวละคร และโมเดล 3 มิติ",
+        example: "รถสปอร์ต /360View แสดงด้านหน้า ด้านข้าง และด้านหลัง"
+    },
+
+    {
+        command: "/XRay",
+        thai: "มองเห็นด้านใน",
+        category: "โครงสร้าง",
+        desc: "สร้างแนวคิดภาพที่ทำให้มองเห็นส่วนภายในของวัตถุ",
+        use: "เหมาะกับงานการศึกษา วิทยาศาสตร์ การแพทย์ และเครื่องจักร",
+        example: "หัวใจมนุษย์ /XRay แสดงโครงสร้างภายใน"
+    },
+
+    {
+        command: "/Cutaway",
+        thai: "ภาพตัด",
+        category: "โครงสร้าง",
+        desc: "ตัดบางส่วนของวัตถุออกเพื่อให้เห็นโครงสร้างภายใน",
+        use: "เหมาะกับอาคาร เครื่องยนต์ บ้าน และผลิตภัณฑ์",
+        example: "บ้านสองชั้น /Cutaway แสดงโครงสร้างภายในบ้าน"
+    },
+
+    {
+        command: "/Isometric",
+        thai: "ภาพสามมิติแบบไอโซเมตริก",
+        category: "มุมมอง",
+        desc: "แสดงวัตถุในมุมมองสามมิติที่เห็นหลายด้านพร้อมกัน",
+        use: "เหมาะกับอาคาร แผนผัง ห้อง ระบบ และผลิตภัณฑ์",
+        example: "สำนักงาน /Isometric 3D view"
+    },
+
+    {
+        command: "/Orthographic",
+        thai: "ภาพแบบทางวิศวกรรม",
+        category: "เทคนิค",
+        desc: "แสดงภาพด้านหน้า ด้านข้าง และด้านบนอย่างเป็นระบบ",
+        use: "เหมาะกับงานออกแบบและงานวิศวกรรม",
+        example: "โต๊ะทำงาน /Orthographic front side top view"
+    },
+
+    {
+        command: "/CrossSection",
+        thai: "ภาพหน้าตัด",
+        category: "โครงสร้าง",
+        desc: "แสดงวัตถุในลักษณะหน้าตัดเพื่อให้เห็นชั้นหรือโครงสร้างด้านใน",
+        use: "เหมาะกับอาคาร เครื่องยนต์ ภูเขา และงานวิทยาศาสตร์",
+        example: "ภูเขาไฟ /CrossSection แสดงชั้นหินและแมกมา"
+    },
+
+    {
+        command: "/TechnicalDrawing",
+        thai: "ภาพวาดทางเทคนิค",
+        category: "เทคนิค",
+        desc: "สร้างภาพที่มีลักษณะเป็นแบบร่างหรือภาพออกแบบทางเทคนิค",
+        use: "เหมาะกับผลิตภัณฑ์ เครื่องจักร และสิ่งประดิษฐ์",
+        example: "หุ่นยนต์ /TechnicalDrawing"
+    },
+
+    {
+        command: "/TopView",
+        thai: "มองจากด้านบน",
+        category: "มุมมอง",
+        desc: "กำหนดให้มองวัตถุหรือสถานที่จากด้านบน",
+        use: "เหมาะกับแผนผัง ห้อง อาหาร สินค้า และพื้นที่",
+        example: "โต๊ะอาหาร /TopView"
+    },
+
+    {
+        command: "/CloseUp",
+        thai: "ภาพระยะใกล้",
+        category: "มุมมอง",
+        desc: "เน้นรายละเอียดของสิ่งที่ต้องการให้เห็นชัดเจน",
+        use: "เหมาะกับใบหน้า อาหาร สินค้า วัสดุ และรายละเอียดเล็ก ๆ",
+        example: "นาฬิกาหรู /CloseUp รายละเอียดหน้าปัด"
+    },
+
+    {
+        command: "/Macro",
+        thai: "ภาพมาโคร",
+        category: "มุมมอง",
+        desc: "เน้นรายละเอียดเล็กมากในระยะใกล้",
+        use: "เหมาะกับดอกไม้ แมลง อาหาร และพื้นผิว",
+        example: "หยดน้ำบนใบไม้ /Macro"
+    },
+
+    {
+        command: "/Cinematic",
+        thai: "ภาพแบบภาพยนตร์",
+        category: "สไตล์",
+        desc: "ทำให้ภาพมีบรรยากาศคล้ายฉากภาพยนตร์",
+        use: "เหมาะกับภาพบุคคล สถานที่ เรื่องราว และงานโฆษณา",
+        example: "เมืองแห่งอนาคต /Cinematic"
+    },
+
+    {
+        command: "/Photorealistic",
+        thai: "เหมือนภาพถ่ายจริง",
+        category: "สไตล์",
+        desc: "เน้นความสมจริงของภาพ วัสดุ แสง และรายละเอียด",
+        use: "เหมาะกับสินค้า คน อาหาร อาคาร และสถานที่",
+        example: "กาแฟบนโต๊ะ /Photorealistic"
+    },
+
+    {
+        command: "/3DRender",
+        thai: "ภาพ 3 มิติ",
+        category: "สไตล์",
+        desc: "ทำให้ภาพมีลักษณะคล้ายภาพเรนเดอร์สามมิติ",
+        use: "เหมาะกับสินค้า อาคาร ห้อง และตัวละคร",
+        example: "บ้านสมัยใหม่ /3DRender"
+    },
+
+    {
+        command: "/Minimal",
+        thai: "เรียบง่าย",
+        category: "สไตล์",
+        desc: "ลดองค์ประกอบที่ไม่จำเป็นและเน้นสิ่งสำคัญ",
+        use: "เหมาะกับงานโฆษณา สินค้า และงานออกแบบ",
+        example: "น้ำดื่มพรีเมียม /Minimal"
+    },
+
+    {
+        command: "/Infographic",
+        thai: "อินโฟกราฟิก",
+        category: "เทคนิค",
+        desc: "จัดข้อมูลให้อยู่ในรูปแบบที่ดูง่ายและเข้าใจได้",
+        use: "เหมาะกับการนำเสนอข้อมูล ความรู้ และขั้นตอน",
+        example: "ขั้นตอนการใช้ AI /Infographic"
+    },
+
+    {
+        command: "/Diagram",
+        thai: "แผนภาพ",
+        category: "เทคนิค",
+        desc: "นำเสนอความสัมพันธ์ของข้อมูลหรือองค์ประกอบต่าง ๆ",
+        use: "เหมาะกับการสอนและอธิบายระบบ",
+        example: "ระบบ AI /Diagram"
+    },
+
+    {
+        command: "/Storyboard",
+        thai: "สตอรี่บอร์ด",
+        category: "เทคนิค",
+        desc: "แบ่งเรื่องราวออกเป็นฉากเพื่อช่วยวางแผนการนำเสนอ",
+        use: "เหมาะกับวิดีโอ โฆษณา และการเล่าเรื่อง",
+        example: "โฆษณากาแฟ /Storyboard"
+    },
+
+    {
+        command: "/CharacterSheet",
+        thai: "แผ่นตัวละคร",
+        category: "มุมมอง",
+        desc: "แสดงตัวละครในหลายท่าหรือหลายมุม",
+        use: "เหมาะกับการออกแบบตัวละคร",
+        example: "ตัวละครนักบินอวกาศ /CharacterSheet"
+    }
+
+];
+
+
+/* ==========================================
+   STATE
+========================================== */
+
+let selected = {
+    style: "",
+    view: "",
+    light: "",
+    background: "",
+    command: ""
+};
+
+let activeCategory = "ทั้งหมด";
+let currentCommand = null;
+
+
+/* ==========================================
+   START BUILDER
+========================================== */
+
+function startBuilder() {
+
+    const builder = document.getElementById("builder");
+
+    builder.classList.add("active");
+
+    builder.scrollIntoView({
+        behavior: "smooth"
+    });
+
+}
+
+
+/* ==========================================
+   SELECT CHOICE
+========================================== */
+
+function selectChoice(button) {
+
+    const group = button.dataset.group;
+    const value = button.dataset.value;
+
+    selected[group] = value;
+
+    document
+        .querySelectorAll(`[data-group="${group}"]`)
+        .forEach(btn => {
+            btn.classList.remove("selected");
+        });
+
+    button.classList.add("selected");
+}
+
+
+/* ==========================================
+   GENERATE PROMPT
+========================================== */
+
+function generatePrompt() {
+
+    const subject =
+        document.getElementById("subject").value.trim();
+
+    if (!subject) {
+
+        alert("กรุณาบอกก่อนว่าคุณอยากสร้างภาพอะไร");
+
+        document.getElementById("subject").focus();
+
+        return;
+    }
+
+
+    let prompt =
+        "สร้างภาพ " + subject;
+
+
+    if (selected.style) {
+
+        prompt +=
+            " โดยใช้รูปแบบ " +
+            selected.style;
+
+    }
+
+
+    if (selected.view) {
+
+        prompt +=
+            " มุมมอง " +
+            selected.view;
+
+    }
+
+
+    if (selected.light) {
+
+        prompt +=
+            " ใช้" +
+            selected.light;
+
+    }
+
+
+    if (selected.background) {
+
+        prompt +=
+            " พร้อม" +
+            selected.background;
+
+    }
+
+
+    if (selected.command) {
+
+        prompt +=
+            " และ" +
+            selected.command;
+
+    }
+
+
+    prompt +=
+        " รายละเอียดคมชัด องค์ประกอบสวยงาม " +
+        "จัดแสงอย่างเหมาะสม และให้ภาพดูเป็นมืออาชีพ";
+
+
+    document.getElementById("promptOutput").textContent =
+        prompt;
+
+
+    document.getElementById("result").style.display =
+        "block";
+
+
+    document.getElementById("result").scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+    });
+
+}
+
+
+/* ==========================================
+   RANDOM EXAMPLE
+========================================== */
+
+function randomExample() {
+
+    document.getElementById("subject").value =
+        "รถยนต์ไฟฟ้าสีขาวรุ่นใหม่";
+
+
+    const styleButtons =
+        document.querySelectorAll('[data-group="style"]');
+
+    const viewButtons =
+        document.querySelectorAll('[data-group="view"]');
+
+    const lightButtons =
+        document.querySelectorAll('[data-group="light"]');
+
+
+    selectChoice(
+        styleButtons[Math.floor(Math.random() * styleButtons.length)]
+    );
+
+    selectChoice(
+        viewButtons[Math.floor(Math.random() * viewButtons.length)]
+    );
+
+    selectChoice(
+        lightButtons[Math.floor(Math.random() * lightButtons.length)]
+    );
+
+
+    generatePrompt();
+
+}
+
+
+/* ==========================================
+   CLEAR
+========================================== */
+
+function clearBuilder() {
+
+    document.getElementById("subject").value = "";
+
+    selected = {
+        style: "",
+        view: "",
+        light: "",
+        background: "",
+        command: ""
+    };
+
+
+    document
+        .querySelectorAll(".choice")
+        .forEach(btn => {
+            btn.classList.remove("selected");
+        });
+
+
+    document.getElementById("result").style.display =
+        "none";
+
+}
+
+
+/* ==========================================
+   COPY
+========================================== */
+
+function copyPrompt() {
+
+    const text =
+        document.getElementById("promptOutput").textContent;
+
+
+    navigator.clipboard.writeText(text)
+        .then(() => {
+
+            document.getElementById("copyMessage").textContent =
+                "คัดลอก Prompt เรียบร้อยแล้ว";
+
+            setTimeout(() => {
+
+                document.getElementById("copyMessage").textContent =
+                    "";
+
+            }, 3000);
+
+        })
+        .catch(() => {
+
+            alert(
+                "ไม่สามารถคัดลอกอัตโนมัติได้ กรุณาเลือกข้อความแล้วคัดลอก"
+            );
+
+        });
+
+}
+
+
+/* ==========================================
+   TEXT TO SPEECH
+========================================== */
+
+function speakPrompt() {
+
+    const text =
+        document.getElementById("promptOutput").textContent;
+
+
+    if (!("speechSynthesis" in window)) {
+
+        alert("เบราว์เซอร์นี้ไม่รองรับการอ่านออกเสียง");
+
+        return;
+    }
+
+
+    const speech =
+        new SpeechSynthesisUtterance(text);
+
+    speech.lang = "th-TH";
+    speech.rate = 0.9;
+
+    window.speechSynthesis.cancel();
+
+    window.speechSynthesis.speak(speech);
+
+}
+
+
+/* ==========================================
+   COMMAND LIBRARY
+========================================== */
+
+function renderCommands() {
+
+    const grid =
+        document.getElementById("commandGrid");
+
+    const search =
+        document.getElementById("searchInput")
+        .value
+        .toLowerCase()
+        .trim();
+
+
+    let filtered = commands.filter(command => {
+
+        const matchCategory =
+            activeCategory === "ทั้งหมด" ||
+            command.category === activeCategory;
+
+
+        const matchSearch =
+            !search ||
+            command.command.toLowerCase().includes(search) ||
+            command.thai.toLowerCase().includes(search) ||
+            command.desc.toLowerCase().includes(search) ||
+            command.use.toLowerCase().includes(search);
+
+
+        return matchCategory && matchSearch;
+
+    });
+
+
+    grid.innerHTML = "";
+
+
+    if (filtered.length === 0) {
+
+        grid.innerHTML = `
+            <div style="
+                grid-column:1/-1;
+                background:white;
+                padding:35px;
+                border-radius:15px;
+                text-align:center;
+                color:#667085;
+            ">
+                ไม่พบคำสั่งที่ค้นหา
+            </div>
+        `;
+
+        return;
+    }
+
+
+    filtered.forEach(command => {
+
+        const card =
+            document.createElement("div");
+
+        card.className =
+            "command-card";
+
+
+        card.innerHTML = `
+
+            <div class="command-name">
+                ${command.command}
+            </div>
+
+            <div class="command-thai">
+                ${command.thai}
+            </div>
+
+            <div class="command-desc">
+                ${command.desc}
+            </div>
+
+            <span class="command-use">
+                กดเพื่อดูรายละเอียด →
+            </span>
+
+        `;
+
+
+        card.onclick = () =>
+            openCommand(command);
+
+
+        grid.appendChild(card);
+
+    });
+
+}
+
+
+/* ==========================================
+   FILTER CATEGORY
+========================================== */
+
+function filterCategory(category, button) {
+
+    activeCategory = category;
+
+
+    document
+        .querySelectorAll(".category-btn")
+        .forEach(btn => {
+            btn.classList.remove("active");
+        });
+
+
+    button.classList.add("active");
+
+
+    renderCommands();
+
+}
+
+
+/* ==========================================
+   COMMAND MODAL
+========================================== */
+
+function openCommand(command) {
+
+    currentCommand = command;
+
+
+    document.getElementById("modalTitle").textContent =
+        command.thai +
+        "  " +
+        command.command;
+
+
+    document.getElementById("modalDescription").textContent =
+        command.desc;
+
+
+    document.getElementById("modalUse").textContent =
+        command.use;
+
+
+    document.getElementById("modalExample").textContent =
+        command.example;
+
+
+    document.getElementById("modal")
+        .classList.add("active");
+
+}
+
+
+function closeModal(event) {
+
+    if (
+        !event ||
+        event.target === document.getElementById("modal")
+    ) {
+
+        document.getElementById("modal")
+            .classList.remove("active");
+
+    }
+
+}
+
+
+/* ==========================================
+   USE COMMAND
+========================================== */
+
+function useCommand() {
+
+    if (!currentCommand) return;
+
+
+    selected.command =
+        currentCommand.desc;
+
+
+    document
+        .querySelectorAll('[data-group="command"]')
+        .forEach(btn => {
+
+            btn.classList.remove("selected");
+
+            if (
+                btn.dataset.value ===
+                currentCommand.desc
+            ) {
+
+                btn.classList.add("selected");
+
+            }
+
+        });
+
+
+    closeModal();
+
+
+    startBuilder();
+
+}
+
+
+/* ==========================================
+   FONT SIZE
+========================================== */
+
+function changeFontSize(direction) {
+
+    if (direction > 0) {
+
+        document.body.classList.add("large-text");
+
+    } else {
+
+        document.body.classList.remove("large-text");
+
+    }
+
+}
+
+
+/* ==========================================
+   SCROLL
+========================================== */
+
+function scrollToSection(id) {
+
+    const element =
+        document.getElementById(id);
+
+    if (element) {
+
+        element.scrollIntoView({
+            behavior: "smooth"
+        });
+
+    }
+
+}
+
+
+/* ==========================================
+   INIT
+========================================== */
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    renderCommands();
+
+});
+
+
+/* ==========================================
+   ESC TO CLOSE MODAL
+========================================== */
+
+document.addEventListener("keydown", event => {
+
+    if (event.key === "Escape") {
+
+        document.getElementById("modal")
+            .classList.remove("active");
+
+    }
+
+});
+
+</script>
+
+</body>
+</html>
