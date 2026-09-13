@@ -2676,40 +2676,109 @@ function copyForApp(outputId, messageId) {
 
 
 /* ==========================================
-   MOBILE DEEP LINKS — เปิดแอป ChatGPT / Gemini / CapCut บนมือถือ
-   iOS: ใช้ https (Universal Link) แอปจะเปิดเองถ้าติดตั้ง
-   Android: ใช้ intent:// ระบุ package ถ้าไม่มีแอปจะ fallback ไปเว็บ
+   MOBILE DEEP LINKS — เปิดแอปมือถือโดยตรง
+   - Android: intent:// ระบุ package (ถ้าไม่มีแอปจะไปเว็บเอง)
+   - iOS: ลอง URL scheme ของแอปก่อน ถ้าไม่เปิดภายใน ~1.5 วิ ค่อยเปิดเว็บ
+   - คอมพิวเตอร์: เปิดเว็บในแท็บใหม่ตามปกติ
 ========================================== */
 
-const ANDROID_PACKAGES = {
-    gpt:    { pkg: "com.openai.chatgpt",           web: "https://chatgpt.com" },
-    gpts:   { pkg: "com.openai.chatgpt",           web: "https://chatgpt.com/gpts/editor" },
-    gemini: { pkg: "com.google.android.apps.bard", web: "https://gemini.google.com/app" },
-    gem:    { pkg: "com.google.android.apps.bard", web: "https://gemini.google.com/gems/create" },
-    capcut: { pkg: "com.lemon.lvoverseas",         web: "https://www.capcut.com" }
+const MOBILE_APPS = {
+    gpt:    { web: "https://chatgpt.com",                  ios: "chatgpt://",      pkg: "com.openai.chatgpt" },
+    gpts:   { web: "https://chatgpt.com/gpts/editor",      ios: "chatgpt://",      pkg: "com.openai.chatgpt" },
+    gemini: { web: "https://gemini.google.com/app",        ios: "googlegemini://", pkg: "com.google.android.apps.bard" },
+    gem:    { web: "https://gemini.google.com/gems/create", ios: "googlegemini://", pkg: "com.google.android.apps.bard" },
+    capcut: { web: "https://www.capcut.com",               ios: "capcut://",       pkg: "com.lemon.lvoverseas" }
 };
 
 function isAndroid() { return /android/i.test(navigator.userAgent); }
-function isIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent); }
+function isIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1); }
+function isMobile() { return isAndroid() || isIOS(); }
+function isInAppBrowser() { return /line\/|fbav|fban|instagram|micromessenger|tiktok|bytedance/i.test(navigator.userAgent); }
 
 function androidIntent(web, pkg) {
     const u = new URL(web);
     return `intent://${u.host}${u.pathname}${u.search}#Intent;scheme=https;package=${pkg};S.browser_fallback_url=${encodeURIComponent(web)};end`;
 }
 
+function launchApp(key) {
+    const app = MOBILE_APPS[key];
+    if (!app) return;
+
+    if (isAndroid()) {
+        window.location.href = androidIntent(app.web, app.pkg);
+        return;
+    }
+
+    if (isIOS()) {
+        const start = Date.now();
+        let fellBack = false;
+        const fallback = () => {
+            if (fellBack) return;
+            fellBack = true;
+            // ถ้าแอปเปิดแล้ว หน้าเว็บจะถูกซ่อน → ไม่ต้องเปิดเว็บ
+            if (document.hidden || Date.now() - start > 2500) return;
+            window.location.href = app.web;   // Universal Link: ถ้ามีแอปก็ยังเด้งเข้าแอปได้
+        };
+        const timer = setTimeout(fallback, 1500);
+        const onHide = () => { clearTimeout(timer); fellBack = true; };
+        document.addEventListener("visibilitychange", onHide, { once: true });
+        window.addEventListener("pagehide", onHide, { once: true });
+        window.location.href = app.ios;
+        return;
+    }
+
+    window.open(app.web, "_blank", "noopener");
+}
+
+function showPlatformNotice() {
+    let text;
+    if (isInAppBrowser()) text = "ตรวจพบว่าเปิดจากในแอปอื่น (เช่น LINE / Facebook) — ปุ่มเปิดแอปจะไม่ทำงาน กรุณากด ⋯ แล้วเลือก 'เปิดในเบราว์เซอร์'";
+    else if (isAndroid()) text = "ตรวจพบ Android — ปุ่มด้านบนจะเปิดแอปโดยตรง";
+    else if (isIOS()) text = "ตรวจพบ iPhone/iPad — ปุ่มด้านบนจะเปิดแอปโดยตรง ถ้าไม่มีแอปจะเปิดเว็บแทน";
+    else text = "ตรวจพบคอมพิวเตอร์ — ปุ่มจะเปิดเว็บในแท็บใหม่ (บนมือถือจะเปิดแอปแทน)";
+
+    document.querySelectorAll(".open-app-row").forEach(row => {
+        if (row.querySelector(".platform-notice")) return;
+        const n = document.createElement("p");
+        n.className = "platform-notice";
+        n.style.cssText = "margin:10px 0 0;font-size:14px;color:var(--muted);";
+        n.textContent = text;
+        row.appendChild(n);
+    });
+}
+
 function setupMobileAppLinks() {
-    if (!isAndroid()) return;   // iOS ใช้ https เดิมได้เลย
+    showPlatformNotice();
+    if (!isMobile()) return;
 
     document.querySelectorAll("a.app-btn").forEach(a => {
+        if (a.dataset.appLink) return;
         const href = a.getAttribute("href") || "";
-        for (const key in ANDROID_PACKAGES) {
-            const { pkg, web } = ANDROID_PACKAGES[key];
-            if (href === web) {
-                a.setAttribute("href", androidIntent(web, pkg));
-                a.setAttribute("target", "_self");   // intent ต้องเปิดในแท็บเดิม
-                a.dataset.appLink = "1";
+        const key = Object.keys(MOBILE_APPS).find(k => MOBILE_APPS[k].web === href);
+        if (!key) return;
+
+        a.dataset.appLink = key;
+        a.removeAttribute("target");
+        const original = a.getAttribute("onclick") || "";
+        a.removeAttribute("onclick");
+
+        a.addEventListener("click", ev => {
+            ev.preventDefault();
+            // คัดลอกก่อน (ถ้าปุ่มนี้มีการคัดลอก)
+            const m = original.match(/copyForApp\('([^']+)',\s*'([^']+)'\)/);
+            let ok = true;
+            if (m) ok = copyForApp(m[1], m[2]);
+            if (ok === false) return;
+            if (isInAppBrowser()) {
+                const msgId = m ? m[2] : null;
+                if (msgId) {
+                    const msg = document.getElementById(msgId);
+                    msg.style.color = "var(--amber)";
+                    msg.textContent = "กำลังเปิดจากในแอปอื่น (เช่น LINE/Facebook) ถ้าแอปไม่เปิด ให้กดเมนู ⋯ แล้วเลือก 'เปิดในเบราว์เซอร์' ก่อน";
+                }
             }
-        }
+            launchApp(key);
+        });
     });
 }
 
