@@ -87,6 +87,7 @@ code{background:var(--surface-2);padding:2px 6px;border-radius:6px;font-size:16p
   <div class="center">
     <label class="photo-btn" for="photoIn">📷 ถ่ายรูป / เลือกรูป</label>
     <input id="photoIn" type="file" accept="image/*" capture="user" style="display:none" onchange="loadPhoto(this)">
+    <button type="button" class="photo-btn" id="flipBtn" style="display:none" onclick="flipPhoto()">↔ กลับด้านซ้าย-ขวา</button>
   </div>
   <label style="display:block;font-weight:600;margin:16px 0 6px">ชื่อเล่น</label>
   <input id="nick" type="text" maxlength="20" placeholder="เช่น ยายแจ่ม" oninput="checkProfile()">
@@ -186,19 +187,26 @@ function submitRow(fields) {
 /* ---------- โปรไฟล์ ---------- */
 let profile = { nick: "", photo: "" };
 function show(id) { ["noCfg", "profile", "menu", "quiz", "quizEnd", "review"].forEach(x => document.getElementById(x).classList.toggle("hidden", x !== id)); window.scrollTo({ top: 0 }); }
+let rawPhotoImg = null, mirror = true;   // กล้องหน้าถ่ายมาจะสลับฝั่งกับที่เห็นตอนถ่าย จึงกลับด้านให้เป็นค่าเริ่มต้น
+function renderPhoto() {
+  if (!rawPhotoImg) return;
+  const S = 96, c = document.createElement("canvas"); c.width = S; c.height = S;
+  const ctx = c.getContext("2d");
+  const img = rawPhotoImg, s = Math.min(img.width, img.height), sx = (img.width - s) / 2, sy = (img.height - s) / 2;
+  if (mirror) { ctx.translate(S, 0); ctx.scale(-1, 1); }
+  ctx.drawImage(img, sx, sy, s, s, 0, 0, S, S);
+  profile.photo = c.toDataURL("image/jpeg", 0.7);
+  document.getElementById("avatar").innerHTML = `<img src="${profile.photo}">`;
+  document.getElementById("flipBtn").style.display = "";
+  checkProfile();
+}
 function loadPhoto(input) {
   const f = input.files && input.files[0]; if (!f) return;
   const r = new FileReader();
-  r.onload = e => { const img = new Image(); img.onload = () => {
-    const S = 96, c = document.createElement("canvas"); c.width = S; c.height = S;
-    const s = Math.min(img.width, img.height), sx = (img.width - s) / 2, sy = (img.height - s) / 2;
-    c.getContext("2d").drawImage(img, sx, sy, s, s, 0, 0, S, S);
-    profile.photo = c.toDataURL("image/jpeg", 0.7);
-    document.getElementById("avatar").innerHTML = `<img src="${profile.photo}">`;
-    checkProfile();
-  }; img.src = e.target.result; };
+  r.onload = e => { const img = new Image(); img.onload = () => { rawPhotoImg = img; mirror = true; renderPhoto(); }; img.src = e.target.result; };
   r.readAsDataURL(f);
 }
+function flipPhoto() { mirror = !mirror; renderPhoto(); }
 function checkProfile() { document.getElementById("goBtn").disabled = document.getElementById("nick").value.trim().length < 1; }
 function saveProfile() {
   profile.nick = document.getElementById("nick").value.trim().slice(0, 20);
