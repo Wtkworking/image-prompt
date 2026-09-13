@@ -240,6 +240,10 @@ function answer(k) {
   if (ok) { right++; gained = 500 + Math.round(500 * (1 - used / TIME_LIMIT)); score += gained; }
   document.querySelectorAll(".opt").forEach(b => { b.disabled = true; const kk = Number(b.dataset.k); if (kk === Q.a) b.classList.add("right"); if (kk === k) b.classList.add("picked"); });
   document.getElementById("qScore").textContent = `${score} แต้ม`;
+  // ส่งความคืบหน้าขึ้นจอกลางทันที (ไม่รอจบเกม)
+  if (!localStorage.getItem(LS + "quizSent")) {
+    submitRow({ TYPE: "progress", NAME: profile.nick, SCORE: score, TIME: Math.round(totalTime), MESSAGE: `ข้อ ${qi + 1}/${QUESTIONS.length} ถูก ${right}`, PHOTO: profile.photo, MOOD: "" }).catch(() => {});
+  }
   document.getElementById("qFb").innerHTML = `<div class="fb ${ok ? "ok" : "no"}"><b>${ok ? `ถูกต้อง! +${gained} แต้ม 🎉` : k === -1 ? "หมดเวลา ⏰" : "ยังไม่ถูกนะ 😅"}</b>คำตอบคือ: ${Q.o[Q.a]}<button class="btn primary" onclick="nextQ()">${qi + 1 < QUESTIONS.length ? "ข้อถัดไป →" : "ดูคะแนน"}</button></div>`;
   if (ok) confetti(30);
 }
