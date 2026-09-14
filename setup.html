@@ -51,76 +51,83 @@ code{background:var(--surface-2);padding:2px 6px;border-radius:6px;font-size:15p
 
   <div class="step"><div class="num">3</div><div>
     <h3>วางโค้ดนี้แทน กดบันทึก (ไอคอนแผ่นดิสก์) แล้วทดสอบ</h3>
+    <div class="note" style="margin:0 0 10px;border-color:var(--red)"><b>เคยวางโค้ดเวอร์ชันก่อนแล้ว?</b> ต้องแทนด้วยโค้ดชุดนี้ (เวอร์ชัน 2 มีระบบให้แอดมินกดข้อถัดไป) แล้วกด <b>Deploy → Manage deployments → ✏ แก้ไข → Version: New version → Deploy</b> URL เดิมจะใช้ได้ต่อ ไม่ต้องสร้างลิงก์ใหม่</div>
     <div class="note" style="margin:0 0 10px">
       <b>วิธีทดสอบที่ถูกต้อง:</b> ที่แถบด้านบนของ Apps Script ตรงช่องเลือกฟังก์ชัน (ข้าง ▶ เรียกใช้) เลือก <code>setup</code> แล้วกด ▶ ครั้งแรก Google จะขอสิทธิ์ → อนุญาต → ด้านล่างจะขึ้น "พร้อมใช้งาน..." และในชีตจะมีแท็บ <code>responses</code> โผล่มา<br>
       <b>ห้ามกด ▶ ที่ doPost หรือ doGet</b> — สองฟังก์ชันนี้ Google เป็นคนเรียกตอนมีข้อมูลส่งมา ถ้ากดเองจะขึ้น error ซึ่งไม่ได้แปลว่าโค้ดผิด
     </div>
     <button class="btn secondary" onclick="copyCode()">📋 คัดลอกโค้ดทั้งหมด</button> <span id="copyMsg" class="status" style="display:inline"></span>
-<pre id="code">// ===== คัมภีร์ใช้ AI — ตัวเก็บข้อมูลเกมปิดท้าย =====
-// สร้างตารางเอง เก็บคะแนนควิซและความรู้สึก และส่งข้อมูลให้จอกลาง
+<pre id="code">// ===== คัมภีร์ใช้ AI — ตัวเก็บข้อมูลเกมปิดท้าย (เวอร์ชัน 2: แอดมินคุมข้อถัดไป) =====
 // วิธีทดสอบ: เลือกฟังก์ชัน "setup" ด้านบน แล้วกด ▶ เรียกใช้ (ห้ามกดเรียกใช้ doPost/doGet ตรง ๆ)
 
 var SHEET_NAME = 'responses';
-var HEAD = ['เวลาบันทึก', 'ประเภท', 'ชื่อเล่น', 'คะแนน', 'เวลา(วินาที)', 'ข้อความ', 'รูป', 'อารมณ์'];
+var HEAD = ['เวลาบันทึก', 'ประเภท', 'ชื่อเล่น', 'คะแนน', 'เวลา(วินาที)', 'ข้อความ', 'รูป', 'รอบ/อารมณ์'];
 
 function getSheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sh = ss.getSheetByName(SHEET_NAME);
-  if (!sh) {
-    sh = ss.insertSheet(SHEET_NAME);
-    sh.appendRow(HEAD);
-    sh.setFrozenRows(1);
-  }
+  if (!sh) { sh = ss.insertSheet(SHEET_NAME); sh.appendRow(HEAD); sh.setFrozenRows(1); }
   return sh;
 }
-
 function jsonOut_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
-
-// กด ▶ เรียกใช้ฟังก์ชันนี้ 1 ครั้ง เพื่อขอสิทธิ์และสร้างตาราง
+function props_() { return PropertiesService.getScriptProperties(); }
+function getState_() {
+  var raw = props_().getProperty('STATE');
+  var st = raw ? JSON.parse(raw) : { phase: 'lobby', qi: -1, startedAt: 0, round: 1 };
+  st.now = Date.now();
+  return st;
+}
 function setup() {
   var sh = getSheet_();
+  if (!props_().getProperty('STATE')) props_().setProperty('STATE', JSON.stringify({ phase: 'lobby', qi: -1, startedAt: 0, round: 1 }));
   Logger.log('พร้อมใช้งาน ตาราง "' + SHEET_NAME + '" มีข้อมูล ' + Math.max(0, sh.getLastRow() - 1) + ' แถว');
 }
 
-// รับข้อมูลจากมือถือผู้เข้าอบรม (Google เรียกเอง)
 function doPost(e) {
   try {
     if (!e || !e.postData) return jsonOut_({ ok: false, error: 'เรียกใช้โดยไม่มีข้อมูล (ให้ทดสอบด้วยฟังก์ชัน setup แทน)' });
     var d = JSON.parse(e.postData.contents || '{}');
     if (!d.type) return jsonOut_({ ok: false, error: 'no type' });
-    var lock = LockService.getScriptLock();
-    lock.waitLock(5000);
-    getSheet_().appendRow([
-      new Date(),
-      String(d.type),
-      String(d.name || '').slice(0, 40),
-      Number(d.score) || 0,
-      Number(d.time) || 0,
-      String(d.message || '').slice(0, 1000),
-      String(d.photo || ''),
-      String(d.mood || '')
-    ]);
+
+    // ---- คำสั่งจากแอดมิน (จอกลาง) ----
+    if (d.type === 'control') {
+      var saved = props_().getProperty('HOST_KEY');
+      if (!saved) { props_().setProperty('HOST_KEY', String(d.key || '')); saved = String(d.key || ''); }
+      if (!d.key || d.key !== saved) return jsonOut_({ ok: false, error: 'รหัสแอดมินไม่ถูกต้อง' });
+      var st = getState_();
+      if (d.action === 'start')      { st.phase = 'question'; st.qi = 0; st.startedAt = Date.now(); }
+      else if (d.action === 'next')  { st.phase = 'question'; st.qi = (st.qi < 0 ? 0 : st.qi + 1); st.startedAt = Date.now(); }
+      else if (d.action === 'end')   { st.phase = 'end'; }
+      else if (d.action === 'reset') { st.phase = 'lobby'; st.qi = -1; st.startedAt = 0; st.round = (st.round || 1) + 1; }
+      else if (d.action === 'lobby') { st.phase = 'lobby'; st.qi = -1; st.startedAt = 0; }
+      delete st.now;
+      props_().setProperty('STATE', JSON.stringify(st));
+      return jsonOut_({ ok: true, state: getState_() });
+    }
+
+    // ---- ข้อมูลจากมือถือผู้เข้าอบรม ----
+    var lock = LockService.getScriptLock(); lock.waitLock(5000);
+    getSheet_().appendRow([new Date(), String(d.type), String(d.name || '').slice(0, 40), Number(d.score) || 0,
+      Number(d.time) || 0, String(d.message || '').slice(0, 1000), String(d.photo || ''), String(d.mood || '')]);
     lock.releaseLock();
     return jsonOut_({ ok: true });
-  } catch (err) {
-    return jsonOut_({ ok: false, error: String(err) });
-  }
+  } catch (err) { return jsonOut_({ ok: false, error: String(err) }); }
 }
 
-// ส่งข้อมูลทั้งหมดให้จอกลาง (Google เรียกเอง)
 function doGet(e) {
   var p = (e && e.parameter) || {};
+  if (p.action === 'state') return jsonOut_({ ok: true, state: getState_() });
   var sh = getSheet_();
-  if (p.action === 'ping') return jsonOut_({ ok: true, rows: Math.max(0, sh.getLastRow() - 1) });
+  if (p.action === 'ping') return jsonOut_({ ok: true, rows: Math.max(0, sh.getLastRow() - 1), state: getState_() });
   var v = sh.getDataRange().getValues();
   var rows = [];
   for (var i = 1; i < v.length; i++) {
     var r = v[i];
     rows.push({ id: i - 1, ts: r[0], type: r[1], name: r[2], score: r[3], time: r[4], message: r[5], photo: r[6], mood: r[7] });
   }
-  return jsonOut_({ ok: true, rows: rows });
+  return jsonOut_({ ok: true, rows: rows, state: getState_() });
 }</pre>
   </div></div>
 
@@ -139,6 +146,8 @@ function doGet(e) {
     <h3>วาง URL แล้วสร้างลิงก์</h3>
     <label>URL ของเว็บแอป (ลงท้าย /exec)</label>
     <input id="api" type="text" placeholder="https://script.google.com/macros/s/AKfycb.../exec">
+    <label>รหัสแอดมิน (ใช้กดควบคุมเกมบนจอกลาง — ตั้งอะไรก็ได้ จำง่าย ๆ)</label>
+    <input id="key" type="text" placeholder="เช่น kampee2569" maxlength="30">
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
       <button class="btn primary" onclick="save()">บันทึกและสร้างลิงก์</button>
       <button class="btn secondary" onclick="test()">ทดสอบการเชื่อมต่อ</button>
@@ -164,7 +173,8 @@ function doGet(e) {
     </div>
   </div>
   <div class="note" style="margin-top:18px">
-    <b>วันงาน:</b> ฉาย QR ให้สแกน → ผู้เข้าอบรมใส่ชื่อเล่น+รูป → เล่นควิซ/เขียนความรู้สึก → จอกลางอัปเดตทุก 8 วินาที → ตอนท้ายกด "🏆 ประกาศผล" บนจอกลาง<br>
+    <b>วันงาน:</b> เปิดจอกลางบนโปรเจกเตอร์ → ฉาย QR ให้สแกน → ผู้เข้าอบรมใส่ชื่อเล่น+รูป แล้วกด "เข้าห้องควิซ" (จะเห็นหน้ารอ) → แอดมินกด <b>▶ เริ่มข้อ 1</b> บนจอกลาง ทุกเครื่องจะเห็นคำถามพร้อมกัน → กด <b>ข้อถัดไป</b> ทีละข้อ → กด <b>จบเกม</b> → <b>🏆 ประกาศผล</b><br>
+    <b>ลิงก์จอกลางมีรหัสแอดมินอยู่ในลิงก์</b> อย่าแชร์ให้ผู้เข้าอบรม<br>
     <b>ล้างข้อมูลทดสอบ:</b> ลบแถวในชีต <code>responses</code> (เก็บแถวหัวตารางไว้) หรือลบชีตทิ้ง ระบบจะสร้างใหม่เอง
   </div>
 </div>
@@ -185,11 +195,12 @@ function test() {
 function save() {
   const st = document.getElementById("st");
   try {
-    const api = getApi(); const cfg = { api };
-    localStorage.setItem(LS + "cfg", JSON.stringify(cfg));
+    const api = getApi(); const key = document.getElementById("key").value.trim();
+    if (key.length < 4) throw new Error("รหัสแอดมินต้องยาวอย่างน้อย 4 ตัวอักษร");
+    const cfg = { api }, hostCfg = { api, key };
+    localStorage.setItem(LS + "cfg", JSON.stringify(hostCfg));
     const base = location.href.split("?")[0].split("#")[0].replace(/setup\.html$/, "");
-    const enc = b64(cfg);
-    const pl = base + "game.html#cfg=" + enc, sl = base + "screen.html#cfg=" + enc;
+    const pl = base + "game.html#cfg=" + b64(cfg), sl = base + "screen.html#cfg=" + b64(hostCfg);
     document.getElementById("playerLink").value = pl; document.getElementById("screenLink").value = sl;
     document.getElementById("openScreen").href = sl;
     const qr = document.getElementById("qr"); qr.innerHTML = ""; const img = new Image(); img.width = 240; img.height = 240; img.alt = "QR";
@@ -199,7 +210,7 @@ function save() {
   } catch (e) { st.className = "status err"; st.textContent = e.message; }
 }
 function copyLink(id) { const el = document.getElementById(id); navigator.clipboard.writeText(el.value).then(() => { el.select(); }); }
-try { const c = JSON.parse(localStorage.getItem(LS + "cfg")); if (c && c.api) { document.getElementById("api").value = c.api; } } catch (e) {}
+try { const c = JSON.parse(localStorage.getItem(LS + "cfg")); if (c && c.api) { document.getElementById("api").value = c.api; if (c.key) document.getElementById("key").value = c.key; } } catch (e) {}
 </script>
 </body>
 </html>
