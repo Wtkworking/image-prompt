@@ -101,9 +101,18 @@ code{background:var(--surface-2);padding:2px 6px;border-radius:6px;font-size:16p
     <div><div style="font-family:var(--head);font-size:22px;font-weight:600" id="nickShow"></div><div class="muted" style="font-size:15px">ชื่อและรูปนี้จะขึ้นจอใหญ่ <a href="#" onclick="editProfile();return false">แก้ไข</a></div></div>
   </div>
   <div class="menu">
-    <div class="tile" onclick="startQuiz()"><div class="ic">🏁</div><h3>ควิซ 10 ข้อ</h3><p class="muted" style="font-size:15px;margin:0">ตอบเร็ว+ถูก ได้แต้มมาก<br>ลุ้นรางวัลอันดับ 1-3</p><span id="quizDone" class="pill hidden">ส่งคะแนนแล้ว</span></div>
+    <div class="tile" onclick="enterLobby()"><div class="ic">🏁</div><h3>เข้าห้องควิซ</h3><p class="muted" style="font-size:15px;margin:0">วิทยากรจะกดเริ่มพร้อมกันทุกคน<br>ตอบเร็ว+ถูก ได้แต้มมาก</p><span id="quizDone" class="pill hidden">ส่งคะแนนแล้ว</span></div>
     <div class="tile" onclick="showReview()"><div class="ic">💌</div><h3>เขียนความรู้สึก</h3><p class="muted" style="font-size:15px;margin:0">ประทับใจอะไร<br>อยากติชมอะไร บอกได้เลย</p></div>
   </div>
+</div>
+
+<!-- ห้องรอ -->
+<div id="lobby" class="card hidden center">
+  <div class="avatar" style="width:90px;height:90px;font-size:40px" id="avatarLobby">🙂</div>
+  <h2 style="margin-top:12px">เข้าห้องควิซแล้ว ✓</h2>
+  <p class="muted" id="lobbyMsg">รอวิทยากรกดเริ่ม... ดูที่จอใหญ่ได้เลย</p>
+  <div class="timer" style="font-size:28px;color:var(--muted)">⏳</div>
+  <button class="btn secondary" onclick="leaveLobby()">กลับหน้าหลัก</button>
 </div>
 
 <!-- ควิซ -->
@@ -155,7 +164,7 @@ const QUESTIONS = [
   { q: "Prompt สั่งตัดวิดีโออัตโนมัติใน CapCut ควรเป็นแบบไหน?", o: ["ยาวมาก ๆ อธิบายทุกวินาที", "สั้น กระชับ บอกสไตล์ ความยาว และอารมณ์", "เป็นบทกวี", "ไม่ต้องพิมพ์อะไรเลย"], a: 1 },
   { q: "ได้ SMS ว่า \"พัสดุค้างภาษี 38 บาท กดลิงก์เพื่อชำระ\" ควรทำอย่างไร?", o: ["กดจ่ายเลย แค่ 38 บาท", "ตอบกลับถามว่าพัสดุอะไร", "ไม่กดลิงก์ ลบทิ้ง ถ้าสงสัยโทรไปรษณีย์เอง", "ส่งต่อให้เพื่อนช่วยจ่าย"], a: 2 },
   { q: "มีคนโทรมาขอรหัส OTP 6 หลักที่เพิ่งได้รับ แปลว่า?", o: ["เป็นเจ้าหน้าที่ธนาคารแน่นอน", "เป็นมิจฉาชีพ 100% ห้ามบอกเด็ดขาด", "บอกได้ถ้าเขาพูดสุภาพ", "บอกแค่ 3 ตัวแรกก็พอ"], a: 1 },
-  { q: "เบอร์ 1441 คือเบอร์อะไร?", o: ["สั่งพิซซ่า", "ศูนย์ AOC แจ้งอายัดบัญชีเมื่อถูกหลอก 24 ชม.", "การไฟฟ้า", "ไปรษณีย์"], a: 1 },
+  { q: "คำสั่ง (System Prompt) ของ GEM ที่ดี ควรมีอะไรบ้าง?", o: ["พิมพ์แค่ \"ช่วยฉันด้วย\" สั้น ๆ พอ", "บอกบทบาท หน้าที่ กลุ่มผู้ใช้ น้ำเสียง กฎที่ต้องทำ และสิ่งห้ามทำ", "ใส่แต่ชื่อร้านกับเบอร์โทร", "เขียนเป็นภาษาอังกฤษเท่านั้นถึงจะใช้ได้"], a: 1 },
   { q: "LINE จากบัญชีใหม่บอกว่า \"แม่ หนูเปลี่ยนเบอร์ ขอยืมเงินด่วน\" ควรทำอย่างไร?", o: ["โอนทันที ลูกเดือดร้อน", "โทรหาลูกที่เบอร์เดิมหรือถามคนในครอบครัวก่อน", "ถามในแชทว่าเกิดวันไหน", "โอนครึ่งเดียวก่อน"], a: 1 },
   { q: "ให้ AI อธิบายเรื่องยาหรืออาการ แล้วควรทำอย่างไรต่อ?", o: ["เชื่อทั้งหมด ไม่ต้องถามใคร", "ใช้เป็นด่านแรกให้เข้าใจ แล้วยืนยันกับหมอหรือเภสัชกรจริง", "ซื้อยาตามที่ AI บอกทันที", "เลิกไปหาหมอ"], a: 1 }
 ];
@@ -186,7 +195,7 @@ function submitRow(fields) {
 
 /* ---------- โปรไฟล์ ---------- */
 let profile = { nick: "", photo: "" };
-function show(id) { ["noCfg", "profile", "menu", "quiz", "quizEnd", "review"].forEach(x => document.getElementById(x).classList.toggle("hidden", x !== id)); window.scrollTo({ top: 0 }); }
+function show(id) { ["noCfg", "profile", "menu", "lobby", "quiz", "quizEnd", "review"].forEach(x => document.getElementById(x).classList.toggle("hidden", x !== id)); window.scrollTo({ top: 0 }); }
 let rawPhotoImg = null, mirror = true;   // กล้องหน้าถ่ายมาจะสลับฝั่งกับที่เห็นตอนถ่าย จึงกลับด้านให้เป็นค่าเริ่มต้น
 function renderPhoto() {
   if (!rawPhotoImg) return;
@@ -217,18 +226,60 @@ function editProfile() { show("profile"); }
 function showMenu() {
   document.getElementById("nickShow").textContent = profile.nick;
   document.getElementById("avatarSmall").innerHTML = profile.photo ? `<img src="${profile.photo}">` : "🙂";
-  document.getElementById("quizDone").classList.toggle("hidden", !localStorage.getItem(LS + "quizSent"));
+  document.getElementById("quizDone").classList.toggle("hidden", !quizSentThisRound());
+  stopPolling();
   show("menu");
 }
 
-/* ---------- ควิซ ---------- */
-let qi = 0, score = 0, right = 0, tLeft = TIME_LIMIT, tick = null, answered = false, tStart = 0, totalTime = 0;
-function startQuiz() {
-  if (localStorage.getItem(LS + "quizSent") && !confirm("คุณส่งคะแนนไปแล้ว เล่นอีกรอบเพื่อความสนุกได้ แต่จะไม่นับคะแนนใหม่ เล่นต่อไหม?")) return;
-  qi = 0; score = 0; right = 0; totalTime = 0; show("quiz"); renderQ();
+/* ---------- ควิซ (วิทยากรคุมข้อถัดไปจากจอกลาง) ---------- */
+let qi = -1, score = 0, right = 0, tLeft = TIME_LIMIT, tick = null, answered = false, tStart = 0, totalTime = 0;
+let state = null, pollTimer = null, clockOffset = 0, lastRound = null, inQuiz = false;
+const roundKey = () => LS + "quizSent:r" + (state ? state.round : "?");
+const quizSentThisRound = () => !!(state && localStorage.getItem(roundKey()));
+
+function fetchState() {
+  return fetch(CFG.api + "?action=state&_=" + Date.now(), { cache: "no-store" }).then(r => r.json()).then(j => {
+    if (!j.ok) throw 0;
+    clockOffset = j.state.now - Date.now();     // ปรับนาฬิกาให้ตรงกับเซิร์ฟเวอร์
+    return j.state;
+  });
 }
-function renderQ() {
-  const Q = QUESTIONS[qi]; answered = false; tLeft = TIME_LIMIT;
+function serverNow() { return Date.now() + clockOffset; }
+
+function enterLobby() {
+  inQuiz = true;
+  document.getElementById("avatarLobby").innerHTML = profile.photo ? `<img src="${profile.photo}">` : "🙂";
+  show("lobby");
+  document.getElementById("lobbyMsg").textContent = "กำลังเชื่อมต่อ...";
+  startPolling();
+}
+function leaveLobby() { inQuiz = false; stopPolling(); showMenu(); }
+function startPolling() { stopPolling(); poll(); pollTimer = setInterval(poll, 3000 + Math.random() * 800); }
+function stopPolling() { clearInterval(pollTimer); pollTimer = null; }
+
+function poll() {
+  if (!inQuiz) return;
+  fetchState().then(st => {
+    const prev = state; state = st;
+    if (lastRound !== null && st.round !== lastRound) { resetLocalGame(); }   // วิทยากรเริ่มรอบใหม่
+    lastRound = st.round;
+    if (st.phase === "lobby") {
+      if (!document.getElementById("lobby").classList.contains("hidden")) document.getElementById("lobbyMsg").textContent = "รอวิทยากรกดเริ่ม... ดูที่จอใหญ่ได้เลย";
+      else if (qi >= 0 && !document.getElementById("quizEnd").classList.contains("hidden")) { /* คงหน้าจบไว้ */ }
+      else show("lobby");
+    } else if (st.phase === "question") {
+      if (st.qi !== qi) { qi = st.qi; if (qi < QUESTIONS.length) renderQ(st); }
+    } else if (st.phase === "end") {
+      if (!document.getElementById("quizEnd").classList.contains("hidden")) return;
+      clearInterval(tick); endQuiz();
+    }
+  }).catch(() => { const m = document.getElementById("lobbyMsg"); if (m) m.textContent = "เชื่อมต่อไม่ได้ กำลังลองใหม่..."; });
+}
+function resetLocalGame() { qi = -1; score = 0; right = 0; totalTime = 0; clearInterval(tick); }
+
+function renderQ(st) {
+  const Q = QUESTIONS[qi]; answered = false;
+  show("quiz");
   document.getElementById("qNum").textContent = `ข้อ ${qi + 1}/${QUESTIONS.length}`;
   document.getElementById("qScore").textContent = `${score} แต้ม`;
   document.getElementById("qBar").style.width = (qi / QUESTIONS.length * 100) + "%";
@@ -236,36 +287,41 @@ function renderQ() {
   const order = [0, 1, 2, 3].sort(() => Math.random() - .5);
   document.getElementById("opts").innerHTML = order.map((k, i) => `<button class="opt c${i}" data-k="${k}" onclick="answer(${k})"><span class="sh">${SHAPES[i]}</span><span>${Q.o[k]}</span></button>`).join("");
   document.getElementById("qFb").innerHTML = "";
-  const tm = document.getElementById("timer"); tm.textContent = tLeft; tm.classList.remove("low");
-  tStart = Date.now();
+  // นับถอยหลังจากเวลาที่วิทยากรกด (ตรงกันทุกเครื่อง)
+  tStart = st.startedAt;
+  const tm = document.getElementById("timer"); tm.classList.remove("low");
   clearInterval(tick);
-  tick = setInterval(() => { tLeft--; tm.textContent = tLeft; if (tLeft <= 5) tm.classList.add("low"); if (tLeft <= 0) { clearInterval(tick); answer(-1); } }, 1000);
+  const update = () => {
+    tLeft = Math.max(0, Math.ceil(TIME_LIMIT - (serverNow() - tStart) / 1000));
+    tm.textContent = tLeft; if (tLeft <= 5) tm.classList.add("low");
+    if (tLeft <= 0) { clearInterval(tick); if (!answered) answer(-1); }
+  };
+  update(); tick = setInterval(update, 250);
+  if (navigator.vibrate) navigator.vibrate(80);
 }
 function answer(k) {
   if (answered) return; answered = true; clearInterval(tick);
-  const Q = QUESTIONS[qi]; const used = Math.min(TIME_LIMIT, (Date.now() - tStart) / 1000); totalTime += used;
+  const Q = QUESTIONS[qi]; const used = Math.min(TIME_LIMIT, Math.max(0, (serverNow() - tStart) / 1000)); totalTime += used;
   const ok = k === Q.a; let gained = 0;
   if (ok) { right++; gained = 500 + Math.round(500 * (1 - used / TIME_LIMIT)); score += gained; }
   document.querySelectorAll(".opt").forEach(b => { b.disabled = true; const kk = Number(b.dataset.k); if (kk === Q.a) b.classList.add("right"); if (kk === k) b.classList.add("picked"); });
   document.getElementById("qScore").textContent = `${score} แต้ม`;
-  // ส่งความคืบหน้าขึ้นจอกลางทันที (ไม่รอจบเกม)
-  if (!localStorage.getItem(LS + "quizSent")) {
-    submitRow({ TYPE: "progress", NAME: profile.nick, SCORE: score, TIME: Math.round(totalTime), MESSAGE: `ข้อ ${qi + 1}/${QUESTIONS.length} ถูก ${right}`, PHOTO: profile.photo, MOOD: "" }).catch(() => {});
+  if (!quizSentThisRound()) {
+    submitRow({ TYPE: "progress", NAME: profile.nick, SCORE: score, TIME: Math.round(totalTime), MESSAGE: `ข้อ ${qi + 1}/${QUESTIONS.length} ถูก ${right}`, PHOTO: profile.photo, MOOD: "r" + state.round }).catch(() => {});
   }
-  document.getElementById("qFb").innerHTML = `<div class="fb ${ok ? "ok" : "no"}"><b>${ok ? `ถูกต้อง! +${gained} แต้ม 🎉` : k === -1 ? "หมดเวลา ⏰" : "ยังไม่ถูกนะ 😅"}</b>คำตอบคือ: ${Q.o[Q.a]}<button class="btn primary" onclick="nextQ()">${qi + 1 < QUESTIONS.length ? "ข้อถัดไป →" : "ดูคะแนน"}</button></div>`;
+  document.getElementById("qFb").innerHTML = `<div class="fb ${ok ? "ok" : "no"}"><b>${ok ? `ถูกต้อง! +${gained} แต้ม 🎉` : k === -1 ? "หมดเวลา ⏰" : "ยังไม่ถูกนะ 😅"}</b>คำตอบคือ: ${Q.o[Q.a]}<div class="muted" style="margin-top:10px">⏳ รอวิทยากรกดข้อถัดไป...</div></div>`;
   if (ok) confetti(30);
 }
-function nextQ() { qi++; if (qi < QUESTIONS.length) renderQ(); else endQuiz(); }
 function endQuiz() {
   show("quizEnd");
   document.getElementById("finalScore").textContent = score; document.getElementById("finalRight").textContent = right;
   confetti(120);
   const st = document.getElementById("sendStatus");
-  if (localStorage.getItem(LS + "quizSent")) { st.className = "status"; st.textContent = "รอบนี้เล่นเพื่อความสนุก ไม่นับคะแนนใหม่"; return; }
+  if (quizSentThisRound()) { st.className = "status"; st.textContent = "ส่งคะแนนไปแล้ว ✓"; return; }
   st.textContent = "กำลังส่งคะแนนขึ้นจอใหญ่...";
-  submitRow({ TYPE: "quiz", NAME: profile.nick, SCORE: score, TIME: Math.round(totalTime), MESSAGE: `ถูก ${right}/${QUESTIONS.length}`, PHOTO: profile.photo, MOOD: "" })
-    .then(() => { localStorage.setItem(LS + "quizSent", "1"); st.className = "status ok"; st.textContent = "ส่งคะแนนแล้ว ✓ ดูอันดับที่จอใหญ่ได้เลย"; })
-    .catch(() => { st.className = "status err"; st.textContent = "ส่งไม่สำเร็จ ลองกดใหม่หรือบอกวิทยากร"; st.innerHTML += ' <button class="btn secondary" onclick="endQuiz()">ส่งอีกครั้ง</button>'; });
+  submitRow({ TYPE: "quiz", NAME: profile.nick, SCORE: score, TIME: Math.round(totalTime), MESSAGE: `ถูก ${right}/${QUESTIONS.length}`, PHOTO: profile.photo, MOOD: "r" + state.round })
+    .then(() => { localStorage.setItem(roundKey(), "1"); st.className = "status ok"; st.textContent = "ส่งคะแนนแล้ว ✓ ดูอันดับที่จอใหญ่ได้เลย"; })
+    .catch(() => { st.className = "status err"; st.innerHTML = 'ส่งไม่สำเร็จ <button class="btn secondary" onclick="endQuiz()">ส่งอีกครั้ง</button>'; });
 }
 
 /* ---------- รีวิว ---------- */
