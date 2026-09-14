@@ -65,6 +65,12 @@ code{background:var(--surface-2);padding:2px 6px;border-radius:6px;font-size:16p
 .confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:50}
 .confetti i{position:absolute;top:-20px;width:12px;height:18px;border-radius:3px;animation:fall 2.8s linear forwards}
 @keyframes fall{to{transform:translateY(110vh) rotate(720deg);opacity:.2}}
+.cam{position:fixed;inset:0;background:rgba(6,15,30,.92);z-index:60;display:flex;align-items:center;justify-content:center;padding:16px}
+.cam.hidden{display:none}
+.cam-box{background:var(--surface);border-radius:22px;padding:16px;width:min(420px,100%);position:relative}
+.cam-box video{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:50%;background:#000;transform:scaleX(-1);display:block}
+.cam-box video.rear{transform:none}
+.cam-guide{position:absolute;left:16px;right:16px;top:16px;aspect-ratio:1/1;border-radius:50%;box-shadow:0 0 0 3px rgba(255,255,255,.7) inset;pointer-events:none}
 @media (max-width:480px){.opts{grid-template-columns:1fr}.menu{grid-template-columns:1fr}.q{font-size:22px}}
 </style>
 </head>
@@ -84,10 +90,11 @@ code{background:var(--surface-2);padding:2px 6px;border-radius:6px;font-size:16p
   <h2 class="center">สวัสดีค่ะ/ครับ 👋</h2>
   <p class="muted center">ใส่ชื่อเล่นและรูป เพื่อขึ้นจอใหญ่</p>
   <div class="avatar" id="avatar">🙂</div>
-  <div class="center">
-    <label class="photo-btn" for="photoIn">📷 ถ่ายรูป / เลือกรูป</label>
-    <input id="photoIn" type="file" accept="image/*" capture="user" style="display:none" onchange="loadPhoto(this)">
-    <button type="button" class="photo-btn" id="flipBtn" style="display:none" onclick="flipPhoto()">↔ กลับด้านซ้าย-ขวา</button>
+  <div class="center" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+    <button type="button" class="photo-btn" onclick="openCamera()">📷 ถ่ายรูป</button>
+    <label class="photo-btn" for="photoIn">🖼 เลือกจากอัลบั้ม</label>
+    <input id="photoIn" type="file" accept="image/*" style="display:none" onchange="loadPhoto(this)">
+    <button type="button" class="photo-btn" id="flipBtn" style="display:none" onclick="flipPhoto()">↔ กลับด้าน</button>
   </div>
   <label style="display:block;font-weight:600;margin:16px 0 6px">ชื่อเล่น</label>
   <input id="nick" type="text" maxlength="20" placeholder="เช่น ยายแจ่ม" oninput="checkProfile()">
@@ -153,6 +160,17 @@ code{background:var(--surface-2);padding:2px 6px;border-radius:6px;font-size:16p
 
 </div>
 <div class="confetti" id="confetti"></div>
+<div id="camModal" class="cam hidden">
+  <div class="cam-box">
+    <video id="camVideo" autoplay playsinline muted></video>
+    <div class="cam-guide"></div>
+    <p class="muted center" style="margin:10px 0 0;font-size:16px">ภาพที่บันทึกจะเหมือนที่เห็นตรงนี้ทุกประการ</p>
+    <div style="display:flex;gap:10px;margin-top:12px">
+      <button class="btn secondary" style="margin:0" onclick="closeCamera()">ยกเลิก</button>
+      <button class="btn primary" style="margin:0" onclick="snap()">📸 ถ่าย</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ---------- คำถาม 10 ข้อ (ทบทวน 2 วัน) ---------- */
@@ -212,10 +230,38 @@ function renderPhoto() {
 function loadPhoto(input) {
   const f = input.files && input.files[0]; if (!f) return;
   const r = new FileReader();
-  r.onload = e => { const img = new Image(); img.onload = () => { rawPhotoImg = img; mirror = true; renderPhoto(); }; img.src = e.target.result; };
+  r.onload = e => { const img = new Image(); img.onload = () => { rawPhotoImg = img; mirror = false; renderPhoto(); }; img.src = e.target.result; };
   r.readAsDataURL(f);
 }
 function flipPhoto() { mirror = !mirror; renderPhoto(); }
+
+// ---- ถ่ายรูปในหน้าเว็บ: พรีวิวเป็นกระจก และบันทึก "ตามที่เห็น" เป๊ะ ๆ ----
+let camStream = null, camFacingUser = true;
+function openCamera() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { document.getElementById("photoIn").click(); return; }
+  const v = document.getElementById("camVideo");
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 720 }, height: { ideal: 720 } }, audio: false })
+    .then(st => { camStream = st; v.srcObject = st; const tr = st.getVideoTracks()[0]; const set = tr.getSettings ? tr.getSettings() : {}; camFacingUser = set.facingMode !== "environment"; v.classList.toggle("rear", !camFacingUser); document.getElementById("camModal").classList.remove("hidden"); })
+    .catch(() => { document.getElementById("photoIn").click(); });   // ไม่อนุญาตกล้อง → ใช้วิธีเลือกไฟล์แทน
+}
+function closeCamera() {
+  if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+  document.getElementById("camModal").classList.add("hidden");
+}
+function snap() {
+  const v = document.getElementById("camVideo");
+  if (!v.videoWidth) return;
+  const S = 96, c = document.createElement("canvas"); c.width = S; c.height = S;
+  const ctx = c.getContext("2d");
+  const s0 = Math.min(v.videoWidth, v.videoHeight), sx = (v.videoWidth - s0) / 2, sy = (v.videoHeight - s0) / 2;
+  if (camFacingUser) { ctx.translate(S, 0); ctx.scale(-1, 1); }     // กระจกเหมือนพรีวิว
+  ctx.drawImage(v, sx, sy, s0, s0, 0, 0, S, S);
+  profile.photo = c.toDataURL("image/jpeg", 0.75);
+  const img = new Image(); img.onload = () => { rawPhotoImg = img; mirror = false; }; img.src = profile.photo;  // เก็บไว้ให้ปุ่มกลับด้านใช้ต่อได้
+  document.getElementById("avatar").innerHTML = `<img src="${profile.photo}">`;
+  document.getElementById("flipBtn").style.display = "";
+  closeCamera(); checkProfile();
+}
 function checkProfile() { document.getElementById("goBtn").disabled = document.getElementById("nick").value.trim().length < 1; }
 function saveProfile() {
   profile.nick = document.getElementById("nick").value.trim().slice(0, 20);
