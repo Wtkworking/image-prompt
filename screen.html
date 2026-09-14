@@ -28,7 +28,7 @@ background-image:radial-gradient(1200px 600px at 85% -10%,rgba(79,209,255,.16),t
 .host .cnt{margin-left:auto;color:var(--muted);font-size:16px}
 .qbox{display:none;padding:0 26px 14px}
 .qbox.on{display:block}
-.qcard{background:rgba(22,41,74,.85);border:1px solid var(--line);border-radius:22px;padding:18px 24px;display:grid;grid-template-columns:110px 1fr;gap:20px;align-items:center}
+.qcard{background:rgba(22,41,74,.85);border:1px solid var(--line);border-radius:22px;padding:18px 24px;display:grid;grid-template-columns:130px 1fr;gap:20px;align-items:center}
 .qcard .big-timer{font-family:var(--head);font-size:70px;font-weight:700;color:var(--cyan);text-align:center;line-height:1}
 .qcard .big-timer.low{color:#ff8585}
 .qcard .qt{font-family:var(--head);font-size:26px;font-weight:600;margin-bottom:10px}
@@ -37,6 +37,7 @@ background-image:radial-gradient(1200px 600px at 85% -10%,rgba(79,209,255,.16),t
 .qcard .qo .c0{background:#e21b3c}.qcard .qo .c1{background:#1368ce}.qcard .qo .c2{background:#d89e00}.qcard .qo .c3{background:#26890c}
 .qcard .qo div.dim{opacity:.25}.qcard .qo div.win{outline:4px solid #ffd93d}
 .qcard .ans{color:var(--muted);font-size:15px;margin-top:8px}
+.qcard .reveal{margin-top:8px;width:100%;border:none;border-radius:10px;padding:8px;background:#ffd93d;color:#2b1d10;font-weight:700;font-family:var(--head);cursor:pointer;font-size:16px}
 @media (max-width:1000px){.grid{height:auto}}
 .panel{background:rgba(22,41,74,.7);border:1px solid var(--line);border-radius:24px;padding:22px;display:flex;flex-direction:column;min-height:0}
 .panel h2{font-family:var(--head);font-weight:600;font-size:26px;margin:0 0 12px;display:flex;align-items:center;gap:10px}
@@ -112,7 +113,7 @@ background-image:radial-gradient(1200px 600px at 85% -10%,rgba(79,209,255,.16),t
   <button class="reset" id="btnReset" onclick="if(confirm('เริ่มรอบใหม่? กระดานคะแนนจะเริ่มจากศูนย์ (ข้อมูลเดิมยังอยู่ในชีต)')) control('reset')">↺ เริ่มรอบใหม่</button>
   <span class="cnt" id="answeredCnt"></span>
 </div>
-<div class="qbox" id="qbox"><div class="qcard"><div class="big-timer" id="bigTimer">20</div><div><div class="qt" id="qTxt"></div><div class="qo" id="qOpts"></div><div class="ans" id="qAns"></div></div></div></div>
+<div class="qbox" id="qbox"><div class="qcard"><div><div class="big-timer" id="bigTimer">0</div><div style="text-align:center;color:var(--muted);font-size:14px">ตอบแล้ว (คน)</div><button class="reveal" onclick="revealAnswer()">เฉลย</button></div><div><div class="qt" id="qTxt"></div><div class="qo" id="qOpts"></div><div class="ans" id="qAns"></div></div></div></div>
 <div class="grid">
   <section class="panel">
     <h2>🏁 อันดับคะแนนควิซ <span style="font-size:14px;color:var(--green);font-weight:400">● สด อัปเดตทุก 3 วิ</span> <span class="count" id="cntQuiz"></span></h2>
@@ -169,32 +170,28 @@ function renderHost() {
     bNext.disabled = true; bEnd.disabled = true; qbox.classList.remove("on");
   } else if (st.phase === "question") {
     const last = st.qi >= QUESTIONS.length - 1;
-    ph.firstChild.textContent = `กำลังเล่น ข้อ ${st.qi + 1} / ${QUESTIONS.length}`; sub.textContent = last ? "ข้อสุดท้ายแล้ว รอหมดเวลาแล้วกด จบเกม" : "รอให้หมดเวลา แล้วกด ข้อถัดไป";
+    ph.firstChild.textContent = `กำลังเล่น ข้อ ${st.qi + 1} / ${QUESTIONS.length}`; sub.textContent = last ? "ข้อสุดท้ายแล้ว รอทุกคนตอบ กด เฉลย แล้วกด จบเกม" : "รอทุกคนตอบ (ดูตัวนับ) กด เฉลย แล้วกด ข้อถัดไป";
     bStart.disabled = true; bNext.disabled = last; qbox.classList.add("on"); renderQuestion();
   } else if (st.phase === "end") {
     ph.firstChild.textContent = "จบเกมแล้ว 🎉"; sub.textContent = "กด 🏆 ประกาศผล หรือ ↺ เริ่มรอบใหม่";
     bStart.disabled = true; bNext.disabled = true; bEnd.disabled = true; qbox.classList.remove("on");
   }
 }
-let qTimer = null;
-function renderQuestion() {
-  const Q = QUESTIONS[state.qi]; if (!Q) return;
-  document.getElementById("qTxt").textContent = `ข้อ ${state.qi + 1}. ${Q.q}`;
-  const opts = document.getElementById("qOpts");
-  opts.innerHTML = Q.o.map((o, i) => `<div class="c${i}" data-i="${i}"><b>${SHAPES[i]}</b> ${esc(o)}</div>`).join("");
-  document.getElementById("qAns").textContent = "";
-  clearInterval(qTimer);
-  const tm = document.getElementById("bigTimer"); tm.classList.remove("low");
-  const tickFn = () => {
-    const left = Math.max(0, Math.ceil(TIME_LIMIT - (Date.now() + clockOffset - state.startedAt) / 1000));
-    tm.textContent = left; if (left <= 5) tm.classList.add("low");
-    if (left <= 0) { clearInterval(qTimer); tm.textContent = "✓"; opts.querySelectorAll("div").forEach(d => { const i = Number(d.dataset.i); d.classList.toggle("win", i === Q.a); d.classList.toggle("dim", i !== Q.a); }); document.getElementById("qAns").textContent = "คำตอบที่ถูก: " + Q.o[Q.a]; }
-  };
-  tickFn(); qTimer = setInterval(tickFn, 250);
-}
 const av = p => p && p.startsWith("data:image") ? `<img src="${p}">` : "🙂";
 const esc = t => (t || "").replace(/&/g, "&amp;").replace(/</g, "&lt;");
 
+function renderQuestion() {
+  const Q = QUESTIONS[state.qi]; if (!Q) return;
+  document.getElementById("qTxt").textContent = `ข้อ ${state.qi + 1}. ${Q.q}`;
+  document.getElementById("qOpts").innerHTML = Q.o.map((o, i) => `<div class="c${i}" data-i="${i}"><b>${SHAPES[i]}</b> ${esc(o)}</div>`).join("");
+  document.getElementById("qAns").textContent = "";
+  document.getElementById("bigTimer").textContent = "0";
+}
+function revealAnswer() {
+  const Q = QUESTIONS[state.qi]; if (!Q) return;
+  document.querySelectorAll("#qOpts div").forEach(d => { const i = Number(d.dataset.i); d.classList.toggle("win", i === Q.a); d.classList.toggle("dim", i !== Q.a); });
+  document.getElementById("qAns").textContent = "คำตอบที่ถูก: " + Q.o[Q.a];
+}
 async function refresh(manual) {
   if (!CFG || !CFG.api) { showErr("ยังไม่มีการตั้งค่า เปิดลิงก์จอกลางที่ได้จากหน้า setup.html"); return; }
   try {
@@ -220,6 +217,7 @@ async function refresh(manual) {
     if (state && state.phase === "question") {
       const tag = `ข้อ ${state.qi + 1}/`; const names = new Set(data.filter(d => d.type === "progress" && d.msg.startsWith(tag)).map(d => d.name.toLowerCase()));
       document.getElementById("answeredCnt").textContent = `ตอบข้อนี้แล้ว ${names.size} คน`;
+      document.getElementById("bigTimer").textContent = names.size;
     } else document.getElementById("answeredCnt").textContent = "";
     render();
     document.getElementById("lastUpd").textContent = "อัปเดต " + new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
