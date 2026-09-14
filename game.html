@@ -108,7 +108,7 @@ code{background:var(--surface-2);padding:2px 6px;border-radius:6px;font-size:16p
     <div><div style="font-family:var(--head);font-size:22px;font-weight:600" id="nickShow"></div><div class="muted" style="font-size:15px">ชื่อและรูปนี้จะขึ้นจอใหญ่ <a href="#" onclick="editProfile();return false">แก้ไข</a></div></div>
   </div>
   <div class="menu">
-    <div class="tile" onclick="enterLobby()"><div class="ic">🏁</div><h3>เข้าห้องควิซ</h3><p class="muted" style="font-size:15px;margin:0">วิทยากรจะกดเริ่มพร้อมกันทุกคน<br>ตอบเร็ว+ถูก ได้แต้มมาก</p><span id="quizDone" class="pill hidden">ส่งคะแนนแล้ว</span></div>
+    <div class="tile" onclick="enterLobby()"><div class="ic">🏁</div><h3>เข้าห้องควิซ</h3><p class="muted" style="font-size:15px;margin:0">วิทยากรจะกดเริ่มพร้อมกันทุกคน<br>ตอบถูกข้อละ 1,000 แต้ม ไม่จับเวลา</p><span id="quizDone" class="pill hidden">ส่งคะแนนแล้ว</span></div>
     <div class="tile" onclick="showReview()"><div class="ic">💌</div><h3>เขียนความรู้สึก</h3><p class="muted" style="font-size:15px;margin:0">ประทับใจอะไร<br>อยากติชมอะไร บอกได้เลย</p></div>
   </div>
 </div>
@@ -126,7 +126,6 @@ code{background:var(--surface-2);padding:2px 6px;border-radius:6px;font-size:16p
 <div id="quiz" class="card hidden">
   <div style="display:flex;justify-content:space-between;align-items:center"><span class="pill" id="qNum">ข้อ 1/10</span><span style="font-family:var(--head);font-weight:600;color:var(--cyan)" id="qScore">0 แต้ม</span></div>
   <div class="progress"><div id="qBar"></div></div>
-  <div class="timer" id="timer">20</div>
   <div class="q" id="qText"></div>
   <div class="opts" id="opts"></div>
   <div id="qFb"></div>
@@ -138,8 +137,8 @@ code{background:var(--surface-2);padding:2px 6px;border-radius:6px;font-size:16p
   <div class="score" id="finalScore">0</div>
   <p class="muted">แต้ม · ถูก <span id="finalRight">0</span>/10 ข้อ</p>
   <p id="sendStatus" class="status"></p>
-  <button class="btn secondary" onclick="showMenu()">กลับหน้าหลัก</button>
-  <button class="btn secondary" onclick="showReview()">เขียนความรู้สึกต่อ →</button>
+  <button class="btn secondary" onclick="leaveLobby()">กลับหน้าหลัก</button>
+  <button class="btn secondary" onclick="leaveLobby(); showReview()">เขียนความรู้สึกต่อ →</button>
 </div>
 
 <!-- รีวิว -->
@@ -187,7 +186,6 @@ const QUESTIONS = [
   { q: "ให้ AI อธิบายเรื่องยาหรืออาการ แล้วควรทำอย่างไรต่อ?", o: ["เชื่อทั้งหมด ไม่ต้องถามใคร", "ใช้เป็นด่านแรกให้เข้าใจ แล้วยืนยันกับหมอหรือเภสัชกรจริง", "ซื้อยาตามที่ AI บอกทันที", "เลิกไปหาหมอ"], a: 1 }
 ];
 const SHAPES = ["▲", "◆", "●", "■"];
-const TIME_LIMIT = 20;
 
 /* ---------- ตั้งค่า / เก็บข้อมูล ---------- */
 const LS = "kampeeGame:";
@@ -277,54 +275,61 @@ function showMenu() {
   show("menu");
 }
 
-/* ---------- ควิซ (วิทยากรคุมข้อถัดไปจากจอกลาง) ---------- */
-let qi = -1, score = 0, right = 0, tLeft = TIME_LIMIT, tick = null, answered = false, tStart = 0, totalTime = 0;
-let state = null, pollTimer = null, clockOffset = 0, lastRound = null, inQuiz = false;
+/* ---------- ควิซ (วิทยากรคุมข้อถัดไปจากจอกลาง · ไม่จับเวลา · กันเน็ตหลุด) ---------- */
+let qi = -1, score = 0, right = 0, answered = false, answeredQ = {};
+let state = null, pollTimer = null, lastRound = null, inQuiz = false, failCount = 0;
 const roundKey = () => LS + "quizSent:r" + (state ? state.round : "?");
 const quizSentThisRound = () => !!(state && localStorage.getItem(roundKey()));
+const POINTS = 1000;
+
+// ---- เก็บความคืบหน้าไว้ในเครื่อง: เน็ตหลุด/รีเฟรช/แอปเด้ง กลับมาเล่นต่อได้ที่เดิม ----
+function saveLocal() { try { localStorage.setItem(LS + "game", JSON.stringify({ round: state ? state.round : null, score, right, answeredQ })); } catch (e) {} }
+function loadLocal(round) {
+  try { const g = JSON.parse(localStorage.getItem(LS + "game")); if (g && g.round === round) { score = g.score || 0; right = g.right || 0; answeredQ = g.answeredQ || {}; return true; } } catch (e) {}
+  score = 0; right = 0; answeredQ = {}; return false;
+}
 
 function fetchState() {
-  return fetch(CFG.api + "?action=state&_=" + Date.now(), { cache: "no-store" }).then(r => r.json()).then(j => {
-    if (!j.ok) throw 0;
-    clockOffset = j.state.now - Date.now();     // ปรับนาฬิกาให้ตรงกับเซิร์ฟเวอร์
-    return j.state;
-  });
+  return fetch(CFG.api + "?action=state&_=" + Date.now(), { cache: "no-store" }).then(r => r.json()).then(j => { if (!j.ok) throw 0; return j.state; });
 }
-function serverNow() { return Date.now() + clockOffset; }
-
 function enterLobby() {
-  inQuiz = true;
+  inQuiz = true; try { localStorage.setItem(LS + "inQuiz", "1"); } catch (e) {}
   document.getElementById("avatarLobby").innerHTML = profile.photo ? `<img src="${profile.photo}">` : "🙂";
   show("lobby");
   document.getElementById("lobbyMsg").textContent = "กำลังเชื่อมต่อ...";
   startPolling();
 }
-function leaveLobby() { inQuiz = false; stopPolling(); showMenu(); }
+function leaveLobby() { inQuiz = false; try { localStorage.removeItem(LS + "inQuiz"); } catch (e) {} stopPolling(); showMenu(); }
 function startPolling() { stopPolling(); poll(); pollTimer = setInterval(poll, 3000 + Math.random() * 800); }
 function stopPolling() { clearInterval(pollTimer); pollTimer = null; }
 
 function poll() {
   if (!inQuiz) return;
   fetchState().then(st => {
-    const prev = state; state = st;
-    if (lastRound !== null && st.round !== lastRound) { resetLocalGame(); }   // วิทยากรเริ่มรอบใหม่
-    lastRound = st.round;
+    failCount = 0; hideNetWarn();
+    state = st;
+    if (lastRound !== st.round) { loadLocal(st.round); lastRound = st.round; qi = -1; }
     if (st.phase === "lobby") {
-      if (!document.getElementById("lobby").classList.contains("hidden")) document.getElementById("lobbyMsg").textContent = "รอวิทยากรกดเริ่ม... ดูที่จอใหญ่ได้เลย";
-      else if (qi >= 0 && !document.getElementById("quizEnd").classList.contains("hidden")) { /* คงหน้าจบไว้ */ }
-      else show("lobby");
+      if (qi >= 0 && !document.getElementById("quizEnd").classList.contains("hidden")) return;   // คงหน้าจบไว้
+      document.getElementById("lobbyMsg").textContent = "รอวิทยากรกดเริ่ม... ดูที่จอใหญ่ได้เลย";
+      show("lobby");
     } else if (st.phase === "question") {
-      if (st.qi !== qi) { qi = st.qi; if (qi < QUESTIONS.length) renderQ(st); }
+      if (st.qi !== qi && st.qi < QUESTIONS.length) { qi = st.qi; renderQ(); }
     } else if (st.phase === "end") {
       if (!document.getElementById("quizEnd").classList.contains("hidden")) return;
-      clearInterval(tick); endQuiz();
+      endQuiz();
     }
-  }).catch(() => { const m = document.getElementById("lobbyMsg"); if (m) m.textContent = "เชื่อมต่อไม่ได้ กำลังลองใหม่..."; });
+  }).catch(() => {
+    failCount++;
+    if (failCount >= 2) showNetWarn();     // เน็ตสะดุด: ไม่เด้งออก แค่แจ้งเตือน แล้วลองใหม่เอง
+    const m = document.getElementById("lobbyMsg"); if (m && !document.getElementById("lobby").classList.contains("hidden")) m.textContent = "เชื่อมต่อไม่ได้ กำลังลองใหม่...";
+  });
 }
-function resetLocalGame() { qi = -1; score = 0; right = 0; totalTime = 0; clearInterval(tick); }
+function showNetWarn() { let w = document.getElementById("netWarn"); if (!w) { w = document.createElement("div"); w.id = "netWarn"; w.style.cssText = "position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:#c96f00;color:#fff;padding:10px 18px;border-radius:12px;z-index:70;font-weight:700"; w.textContent = "📶 สัญญาณไม่ดี กำลังเชื่อมต่อใหม่... คะแนนของคุณยังอยู่"; document.body.appendChild(w); } }
+function hideNetWarn() { const w = document.getElementById("netWarn"); if (w) w.remove(); }
 
-function renderQ(st) {
-  const Q = QUESTIONS[qi]; answered = false;
+function renderQ() {
+  const Q = QUESTIONS[qi];
   show("quiz");
   document.getElementById("qNum").textContent = `ข้อ ${qi + 1}/${QUESTIONS.length}`;
   document.getElementById("qScore").textContent = `${score} แต้ม`;
@@ -333,30 +338,26 @@ function renderQ(st) {
   const order = [0, 1, 2, 3].sort(() => Math.random() - .5);
   document.getElementById("opts").innerHTML = order.map((k, i) => `<button class="opt c${i}" data-k="${k}" onclick="answer(${k})"><span class="sh">${SHAPES[i]}</span><span>${Q.o[k]}</span></button>`).join("");
   document.getElementById("qFb").innerHTML = "";
-  // นับถอยหลังจากเวลาที่วิทยากรกด (ตรงกันทุกเครื่อง)
-  tStart = st.startedAt;
-  const tm = document.getElementById("timer"); tm.classList.remove("low");
-  clearInterval(tick);
-  const update = () => {
-    tLeft = Math.max(0, Math.ceil(TIME_LIMIT - (serverNow() - tStart) / 1000));
-    tm.textContent = tLeft; if (tLeft <= 5) tm.classList.add("low");
-    if (tLeft <= 0) { clearInterval(tick); if (!answered) answer(-1); }
-  };
-  update(); tick = setInterval(update, 250);
+  answered = false;
+  if (answeredQ[qi] !== undefined) { showAnswered(answeredQ[qi], false); }   // เคยตอบข้อนี้แล้ว (กลับมาหลังเน็ตหลุด)
   if (navigator.vibrate) navigator.vibrate(80);
 }
-function answer(k) {
-  if (answered) return; answered = true; clearInterval(tick);
-  const Q = QUESTIONS[qi]; const used = Math.min(TIME_LIMIT, Math.max(0, (serverNow() - tStart) / 1000)); totalTime += used;
-  const ok = k === Q.a; let gained = 0;
-  if (ok) { right++; gained = 500 + Math.round(500 * (1 - used / TIME_LIMIT)); score += gained; }
+function showAnswered(k, celebrate) {
+  const Q = QUESTIONS[qi]; const ok = k === Q.a; answered = true;
   document.querySelectorAll(".opt").forEach(b => { b.disabled = true; const kk = Number(b.dataset.k); if (kk === Q.a) b.classList.add("right"); if (kk === k) b.classList.add("picked"); });
   document.getElementById("qScore").textContent = `${score} แต้ม`;
+  document.getElementById("qFb").innerHTML = `<div class="fb ${ok ? "ok" : "no"}"><b>${ok ? `ถูกต้อง! +${POINTS} แต้ม 🎉` : "ยังไม่ถูกนะ 😅"}</b>คำตอบคือ: ${Q.o[Q.a]}<div class="muted" style="margin-top:10px">⏳ รอวิทยากรกดข้อถัดไป...</div></div>`;
+  if (ok && celebrate) confetti(30);
+}
+function answer(k) {
+  if (answered || answeredQ[qi] !== undefined) return;
+  const Q = QUESTIONS[qi]; const ok = k === Q.a;
+  if (ok) { right++; score += POINTS; }
+  answeredQ[qi] = k; saveLocal();
+  showAnswered(k, true);
   if (!quizSentThisRound()) {
-    submitRow({ TYPE: "progress", NAME: profile.nick, SCORE: score, TIME: Math.round(totalTime), MESSAGE: `ข้อ ${qi + 1}/${QUESTIONS.length} ถูก ${right}`, PHOTO: profile.photo, MOOD: "r" + state.round }).catch(() => {});
+    submitRow({ TYPE: "progress", NAME: profile.nick, SCORE: score, TIME: 0, MESSAGE: `ข้อ ${qi + 1}/${QUESTIONS.length} ถูก ${right}`, PHOTO: profile.photo, MOOD: "r" + state.round }).catch(() => {});
   }
-  document.getElementById("qFb").innerHTML = `<div class="fb ${ok ? "ok" : "no"}"><b>${ok ? `ถูกต้อง! +${gained} แต้ม 🎉` : k === -1 ? "หมดเวลา ⏰" : "ยังไม่ถูกนะ 😅"}</b>คำตอบคือ: ${Q.o[Q.a]}<div class="muted" style="margin-top:10px">⏳ รอวิทยากรกดข้อถัดไป...</div></div>`;
-  if (ok) confetti(30);
 }
 function endQuiz() {
   show("quizEnd");
@@ -365,7 +366,7 @@ function endQuiz() {
   const st = document.getElementById("sendStatus");
   if (quizSentThisRound()) { st.className = "status"; st.textContent = "ส่งคะแนนไปแล้ว ✓"; return; }
   st.textContent = "กำลังส่งคะแนนขึ้นจอใหญ่...";
-  submitRow({ TYPE: "quiz", NAME: profile.nick, SCORE: score, TIME: Math.round(totalTime), MESSAGE: `ถูก ${right}/${QUESTIONS.length}`, PHOTO: profile.photo, MOOD: "r" + state.round })
+  submitRow({ TYPE: "quiz", NAME: profile.nick, SCORE: score, TIME: 0, MESSAGE: `ถูก ${right}/${QUESTIONS.length}`, PHOTO: profile.photo, MOOD: "r" + state.round })
     .then(() => { localStorage.setItem(roundKey(), "1"); st.className = "status ok"; st.textContent = "ส่งคะแนนแล้ว ✓ ดูอันดับที่จอใหญ่ได้เลย"; })
     .catch(() => { st.className = "status err"; st.innerHTML = 'ส่งไม่สำเร็จ <button class="btn secondary" onclick="endQuiz()">ส่งอีกครั้ง</button>'; });
 }
@@ -407,7 +408,7 @@ if (location.search.includes("setup")) {
   show("noCfg");
 } else {
   try { profile = JSON.parse(localStorage.getItem(LS + "profile")) || profile; } catch (e) {}
-  if (profile.nick) { showMenu(); } else { show("profile"); }
+  if (profile.nick) { showMenu(); if (localStorage.getItem(LS + "inQuiz")) enterLobby(); } else { show("profile"); }
   if (profile.photo) document.getElementById("avatar").innerHTML = `<img src="${profile.photo}">`;
   document.getElementById("nick").value = profile.nick || "";
   checkProfile();
